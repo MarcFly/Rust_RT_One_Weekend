@@ -1,5 +1,8 @@
+mod ppm;
+mod rtow_math;
+
 fn main() {
-    println!("Hello, world!");
+    ppm::output_ppm();
 }
 
 #[cfg(test)]
