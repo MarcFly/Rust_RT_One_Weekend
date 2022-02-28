@@ -2,7 +2,8 @@ mod ppm;
 mod rtow_math;
 
 fn main() {
-    ppm::output_ppm();
+    //ppm::output_ppm();
+    ppm::output_ppm_vec3();
 }
 
 #[cfg(test)]
@@ -18,7 +19,7 @@ mod ppm_tests {
         // Render
         println!("P3\n{}' '{}\n255\n", w,h);
         
-        for i in (-1..(h-1)).rev() {
+        for i in (0..(h-1)).rev() {
             println!("Line {}", i);
             let float_i: f64 = (i).into();
 

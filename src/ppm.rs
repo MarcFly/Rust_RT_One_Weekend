@@ -26,3 +26,32 @@ pub fn output_ppm() {
     }
     eprintln!("\nDone");
 }
+
+use crate::rtow_math::vec3::*;
+
+pub fn output_ppm_vec3() {
+    // Image
+    let w: i32 = 256;
+    let h: i32 = 256;
+    let float_w: f64 = 256.;
+    let float_h: f64 = 256.;
+
+    // Render
+    println!("P3\n{}' '{}\n255\n", w,h);
+    
+    for i in (0..(h)).rev() {
+        let float_i: f64 = (i).into();
+        eprintln!("\rScanlines Remaining: {}\r", i);
+        for j in (0..w) {
+            let float_j: f64 = (j).into();
+            let pixel_color = vec3::from(
+                float_j / (float_w-1.),
+                float_i / (float_h-1.),
+                0.25
+            );
+            
+            pixel_color.write_color();
+        }
+    }
+    eprintln!("\nDone");
+}
