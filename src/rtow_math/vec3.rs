@@ -1,5 +1,5 @@
-type point3 = vec3;
-type colorRGB = vec3;
+pub type point3 = vec3;
+pub type colorRGB = vec3;
 
 pub struct vec3 {
     v: [f64; 3],
@@ -13,37 +13,40 @@ impl vec3 {
     pub fn y(&self) -> &f64 {&self.v[1]}
     pub fn z(&self) -> &f64 {&self.v[2]}
     
-    pub fn add(&mut self, other: &vec3) -> &vec3 {
-        self.v[0] += other.x();
-        self.v[1] += other.y();
-        self.v[2] += other.z();
-        self
+    pub fn add(&self, other: &vec3) -> vec3 {
+        vec3::from(
+            self.v[0] + other.x(),
+            self.v[1] + other.y(),
+            self.v[2] + other.z(),
+        )
     }
 
-    pub fn substract(&mut self, other: &vec3) -> &vec3 {
-        self.v[0] -= other.x();
-        self.v[1] -= other.y();
-        self.v[2] -= other.z();
-        self
+    pub fn substract(&self, other: &vec3) -> vec3 {
+        vec3::from(
+            self.v[0] - other.x(),
+            self.v[1] - other.y(),
+            self.v[2] - other.z(),
+        )
     }
 
-    pub fn mult(&mut self, other: &vec3) -> &vec3 {
-        self.v[0] *= other.x();
-        self.v[1] *= other.y();
-        self.v[2] *= other.z();
-        self
+    pub fn mult(&self, other: &vec3) -> vec3 {
+        vec3::from(
+            self.v[0] * other.x(),
+            self.v[1] * other.y(),
+            self.v[2] * other.z(),
+        )
     }
 
-    pub fn mult_sc(&mut self, other: &f64) -> &vec3 {
-        self.v[0] *= other;
-        self.v[1] *= other;
-        self.v[2] *= other;
-        self
+    pub fn mult_sc(&self, other: f64) -> vec3 {
+        vec3::from(
+            self.v[0] * other,
+            self.v[1] * other,
+            self.v[2] * other,
+        )
     }
 
-    pub fn div(&mut self, other: &f64) -> &vec3 {
-        let inv = 1./other;
-        self.mult_sc(&inv)
+    pub fn div(&self, other: f64) -> vec3 {
+        self.mult_sc( 1./other)
     }
 
     pub fn length_squared(&self) -> f64 {
