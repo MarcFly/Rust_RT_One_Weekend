@@ -10,7 +10,6 @@ impl ray {
     pub fn from(p: &point3, d: &vec3) -> ray{ ray{origin: point3::from_vec(p), dir: vec3::from_vec(d)}}
 
     pub fn at(mut self, t: f64) -> point3 { 
-        let movement = self.dir.mult_sc(t);
-        self.origin.add(&movement) 
+        self.origin + self.dir * t 
     }
 }
