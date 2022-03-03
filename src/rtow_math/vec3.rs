@@ -5,6 +5,7 @@ pub type colorRGB = vec3;
 pub struct vec3 {
     v: [f64; 3],
 }
+type vec3_scalar = vec3;
 
 use std::ops;
 
@@ -15,6 +16,17 @@ impl ops::Add<vec3> for vec3 {
             self.v[0] + other.x(),
             self.v[1] + other.y(),
             self.v[2] + other.z(),
+        )
+    }
+}
+
+impl ops::Add<f64> for vec3_scalar {
+    type Output = vec3;
+    fn add(self, other: f64) -> vec3 {
+        vec3::from(
+            self.v[0] + other,
+            self.v[1] + other,
+            self.v[2] + other,
         )
     }
 }
@@ -41,7 +53,6 @@ impl ops::Mul<vec3> for vec3 {
     }
 }
 
-type vec3_scalar = vec3;
 impl ops::Mul<f64> for vec3_scalar {
     type Output = vec3;
     fn mul(self, other: f64) -> vec3 {
