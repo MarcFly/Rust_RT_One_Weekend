@@ -1,5 +1,7 @@
 use crate::rtow_math::vec3::*;
 use crate::rtow_math::ray::*;
+use crate::materials::Material;
+use crate::materials::Default;
 
 /// Knowing that a point is outside a sphere if x^2 + y^2 + z^2 > Radius^2
 /// Assuming sphere is at origin, else we just transalate point by center and calculate again
@@ -46,14 +48,19 @@ fn check_discriminant(discriminant: f64, b: f64, a: f64) -> f64 {
     }
 }
 
+use std::rc::Rc;
 pub struct sphere {
     pub center: point3,
     pub radius: f64,
+    pub mat: Rc<dyn Material>,
 }
 
 impl sphere {
-    pub fn new() -> sphere {sphere{center: point3::new(), radius: 1.}}
-    pub fn from(p: point3, r: f64) -> sphere { sphere{center: p, radius: r}}
+    pub fn new() -> sphere {sphere{center: point3::new(), radius: 1., mat: Rc::new(Default{})}}
+    pub fn from(p: point3, r: f64) -> sphere { sphere{center: p, radius: r, mat: Rc::new(Default{})}}
+    pub fn from_mat(p: point3, r: f64, mat_p: Rc::<dyn Material>) -> sphere {
+        sphere { center: p, radius: r, mat: Rc::clone(&mat_p)}
+    }
 }
 
 use crate::rtow_math::hit::*;
@@ -82,7 +89,39 @@ impl Hittable for sphere {
         rec.n = (rec.p - self.center) / self.radius; // This is bad, only returns normal pointing outwards
         // What if we need to differentiate between from and back face!
         rec.set_face_normal(r);
+        rec.mat = Rc::clone(&self.mat);
 
         true
     }   
+}
+
+use crate::rtow_math::defines;
+use crate::rtow_math::rng::*;
+
+pub fn random_in_sphere() -> point3 {
+    let mut p = point3::new();
+    let x = while(true) {
+        p = point3::from(
+            rand_f64_r(-1., 1.),
+            rand_f64_r(-1., 1.),
+            rand_f64_r(-1., 1.));
+        if p.length() < 1. {break;}
+    };
+    p
+}
+
+pub fn random_in_sphere_1() -> point3 {
+    point3::from(
+        rand_f64_r(-1., 1.),
+        rand_f64_r(-1., 1.),
+        rand_f64_r(-1., 1.),
+    )
+}
+
+pub fn random_in_sphere_bad() -> point3 {
+    point3::from(
+        rand_f64_r(*defines::side_min, *defines::side_max),
+        rand_f64_r(*defines::side_min, *defines::side_max),
+        rand_f64_r(*defines::side_min, *defines::side_max),
+    )
 }

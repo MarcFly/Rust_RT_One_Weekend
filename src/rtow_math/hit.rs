@@ -1,13 +1,17 @@
 use crate::rtow_math::ray::*;
 use crate::rtow_math::vec3::*;
 use crate::rtow_math::sphere::*;
+use crate::materials::Material;
+use crate::materials::Default;
+use std::rc::Rc;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct hit_record {
     pub p: point3,
     pub n: vec3,
     pub t: f64,
     pub front_face: bool,
+    pub mat: Rc<dyn Material>,
 }
 
 impl hit_record {
@@ -16,7 +20,8 @@ impl hit_record {
                 p: point3::new(), 
                 n: vec3::new(), 
                 t: std::f64::INFINITY, 
-                front_face: true 
+                front_face: true,
+                mat: Rc::new(Default{}),
             }
         }
     
@@ -39,9 +44,8 @@ pub fn hit_list(hittables: &Vec<Box<dyn Hittable>>, t_min: f64, t_max: f64, rec:
         if(obj.hit(r, t_min, t_max, &mut temp_rec) && temp_rec.t < closest) {
             hit_anything = true;
             closest = temp_rec.t;
-            *rec = temp_rec;
+            *rec = temp_rec.clone();
         }
     }
-
     hit_anything
 }

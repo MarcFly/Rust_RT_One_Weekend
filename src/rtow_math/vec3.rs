@@ -1,5 +1,6 @@
 pub type point3 = vec3;
 pub type colorRGB = vec3;
+use num;
 
 #[derive(Debug, Copy, Clone)]
 pub struct vec3 {
@@ -83,6 +84,11 @@ impl vec3 {
     pub fn x(&self) -> &f64 {&self.v[0]}
     pub fn y(&self) -> &f64 {&self.v[1]}
     pub fn z(&self) -> &f64 {&self.v[2]}
+    
+    pub fn near_zero(&self) -> bool {
+        let min = 1e-8;
+        (self.v[0] < min) && (self.v[1] < min) && (self.v[2] < min) 
+    }
 
     pub fn length_squared(&self) -> f64 {
         self.v[0]*self.v[0] + self.v[1]*self.v[1] + self.v[2]*self.v[2]
@@ -111,11 +117,28 @@ impl vec3 {
         vec3::from( x, y, z)
     }
 
-    pub fn write_color(self) {
-        println!("{} {} {}", 
-            (255.999 * self.v[0]) as i32,
-            (255.999 * self.v[1]) as i32,
-            (255.999 * self.v[2]) as i32);
+    pub fn sqrt(&self) -> vec3 {
+        vec3::from(
+            self.v[0].sqrt(),
+            self.v[1].sqrt(),
+            self.v[2].sqrt(),
+        )
+    }
+
+    pub fn reflect(&self, n: &vec3) -> vec3 {
+        *self - *n * 2. * self.dot(n)
+    }
+
+    pub fn write_color(self, samples_pp: f64) {
+        let scale = 1. / samples_pp;
+        let mut col = self * scale;
+        col = col.sqrt(); // Gamma Correct
+        // Test without clamp
+        print!("{} {} {}\n", 
+            (256.0 * num::clamp(col.v[0], 0., 0.999)) as i32,
+            (256.0 * num::clamp(col.v[1], 0., 0.999)) as i32,
+            (256.0 * num::clamp(col.v[2], 0., 0.999)) as i32);
     }
 }
+
 
