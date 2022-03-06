@@ -129,6 +129,14 @@ impl vec3 {
         *self - *n * 2. * self.dot(n)
     }
 
+    pub fn refract(&self, n: &vec3, coef: f64) -> vec3 {
+        let dot = (self.unit_vec() * -1.).dot(n);
+        let cos = dot.min(1.);
+        let perp = (*self + *n*cos ) * coef;
+        let parl = *n * (num::abs(1. - perp.length_squared())).sqrt() * -1.;
+        perp + parl
+    }   
+
     pub fn write_color(self, samples_pp: f64) {
         let scale = 1. / samples_pp;
         let mut col = self * scale;

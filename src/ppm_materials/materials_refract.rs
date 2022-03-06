@@ -44,9 +44,9 @@ fn ray_hits(r: &ray, obj: &Vec<Box<dyn Hittable>>, depth: i32) ->  colorRGB {
 
 use std::rc::Rc;
 
-pub fn output_materials() {
-    let samples = 100;
-    let depth = 50;
+pub fn output_materials_refract() {
+    let samples = 10;
+    let depth = 5;
 
     let aspect_ratio = 16. / 9.;
     let image_width = 400;
@@ -58,12 +58,13 @@ pub fn output_materials() {
     
     // New Materials
     let mat_ground = Rc::new(lambertian{albedo: colorRGB::from(0.8, 0.8, 0.0)});
-    let mat_center = Rc::new(lambertian{albedo: colorRGB::from(0.7, 0.3, 0.3)});
+    let mat_center = Rc::new(dielectric{albedo: colorRGB::from(0.7, 0.3, 0.3), alpha:1., index_refr: 1.5});
     let mat_left = Rc::new(metal{albedo: colorRGB::from(0.8, 0.8, 0.8), fuzz: 0.3});
     let mat_right = Rc::new(metal{albedo: colorRGB::from(0.8, 0.6, 0.2), fuzz: 1.});
     
     let mut hittables: Vec<Box<dyn Hittable>> = Vec::new();
-    hittables.push(Box::new(sphere::from_mat(point3::from(0., 0., -1.), 0.5, mat_center)));
+    hittables.push(Box::new(sphere::from_mat(point3::from(0., 0., -1.), -0.5, mat_center.clone())));
+    hittables.push(Box::new(sphere::from_mat(point3::from(0., 0., -1.), -0.4, mat_center.clone())));
     hittables.push(Box::new(sphere::from_mat(point3::from(0., -100.5, -1.), 100., mat_ground)));
     hittables.push(Box::new(sphere::from_mat(point3::from(-1., 0., -1.), 0.5, mat_left)));
     hittables.push(Box::new(sphere::from_mat(point3::from(1., 0., -1.), 0.5, mat_right)));

@@ -45,9 +45,11 @@ fn Chapters1_7(){
 mod ppm_materials;
 use crate::ppm_materials::diffuse::*;
 use crate::ppm_materials::materials_1::*;
+use crate::ppm_materials::materials_refract::*;
 mod materials;
 
 fn Chapters8_X() {
     //output_diffuse();
-    output_materials();
+    //output_materials();
+    output_materials_refract();
 }
