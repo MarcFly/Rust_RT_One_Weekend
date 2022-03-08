@@ -147,6 +147,16 @@ impl vec3 {
             (256.0 * num::clamp(col.v[1], 0., 0.999)) as i32,
             (256.0 * num::clamp(col.v[2], 0., 0.999)) as i32);
     }
+
+    pub fn clamp(&mut self, min: f64, max:f64) {
+        if self.v[0] < min {self.v[0] = min};
+        if self.v[1] < min {self.v[1] = min};
+        if self.v[2] < min {self.v[2] = min};
+
+        if self.v[0] > max {self.v[0] = max};
+        if self.v[1] > max {self.v[1] = max};
+        if self.v[2] > max {self.v[2] = max};
+    }
 }
 
 

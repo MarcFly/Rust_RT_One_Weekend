@@ -81,7 +81,8 @@ impl dielectric {
 impl Material for dielectric {
     fn scatter(&self, r: &ray, rec: &hit_record, attenuation: &mut colorRGB, scatter: &mut ray) -> bool {
         *attenuation = self.albedo * self.alpha;
-        *attenuation = colorRGB::from(1.,1.,1.);
+        *attenuation = (colorRGB::from(1.,1.,1.) + self.albedo*self.alpha);
+        attenuation.clamp(0.,1.);
         let ratio = if rec.front_face { 1. / self.index_refr} else { self.index_refr };
         let unit = r.dir.unit_vec();
         

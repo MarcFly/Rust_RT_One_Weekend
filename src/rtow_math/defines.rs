@@ -1,3 +1,5 @@
+pub use crate::rtow_math::rng::*;
+pub use crate::rtow_math::vec3::*;
 
 pub use std::f64::INFINITY;
 
@@ -9,6 +11,17 @@ pub fn deg_to_rad(degrees: f64) -> f64 {
 
 pub fn rad_to_def(radians: f64) -> f64 {
     radians * 180. / pi
+}
+
+pub fn random_in_disk() -> point3 {
+    while(true) {
+        let p = point3::from(
+            rand_f64_r(-1., 1.),
+            rand_f64_r(-1., 1.),
+            0. );
+        if p.length_squared()  < 1. { return p }
+    };
+    vec3::new() // Something went terribly wrong;
 }
 
 #[macro_use]

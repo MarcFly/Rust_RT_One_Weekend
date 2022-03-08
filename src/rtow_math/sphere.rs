@@ -99,15 +99,14 @@ use crate::rtow_math::defines;
 use crate::rtow_math::rng::*;
 
 pub fn random_in_sphere() -> point3 {
-    let mut p = point3::new();
-    let x = while(true) {
-        p = point3::from(
+    while(true) {
+        let p = point3::from(
             rand_f64_r(-1., 1.),
             rand_f64_r(-1., 1.),
             rand_f64_r(-1., 1.));
-        if p.length() < 1. {break;}
+        if p.length() < 1. { return p }
     };
-    p
+    point3::new() // Something has gone terribly bad
 }
 
 pub fn random_in_sphere_1() -> point3 {
