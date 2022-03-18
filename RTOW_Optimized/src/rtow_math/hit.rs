@@ -1,8 +1,8 @@
 use crate::rtow_math::ray::*;
 use crate::rtow_math::vec3::*;
 use crate::rtow_math::sphere::*;
-use crate::materials::Material;
-use crate::materials::Default;
+use crate::materials::*;
+
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -11,7 +11,7 @@ pub struct hit_record {
     pub n: vec3,
     pub t: f64,
     pub front_face: bool,
-    pub mat: Arc<dyn Material>,
+    pub mat: Arc<Box<*const dyn Material>>,
 }
 
 impl hit_record {
@@ -21,7 +21,7 @@ impl hit_record {
                 n: vec3::new(), 
                 t: std::f64::INFINITY, 
                 front_face: true,
-                mat: Arc::new(Default{}),
+                mat: Arc::new(Box::new(&def_material)),
             }
         }
     
@@ -31,9 +31,11 @@ impl hit_record {
     }
 }
 
-pub trait Hittable {
+pub trait Hittable: Send + Sync {
     fn hit(&self, r: &ray, t_min: f64, t_max: f64, rec:&mut hit_record) -> bool;
 }
+
+
 
 pub fn hit_list(hittables: &Vec<Box<dyn Hittable>>, t_min: f64, t_max: f64, rec: &mut hit_record, r: &ray) -> bool {
     let mut temp_rec = hit_record::new();

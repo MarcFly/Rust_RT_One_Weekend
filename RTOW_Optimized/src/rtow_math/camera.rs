@@ -4,6 +4,7 @@ use crate::rtow_math::{
     defines::*,
 };
 
+#[derive(Copy, Clone)]
 pub struct camera {
     origin: point3,
     pitch: vec3, //horizontal

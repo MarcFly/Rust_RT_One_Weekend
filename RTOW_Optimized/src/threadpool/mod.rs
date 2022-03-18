@@ -22,11 +22,11 @@ impl Worker {
             
             match message {
                 Message::NewJob(job) => {
-                    println!("Worker {} got a job; executing.", id);
+                    //eprintln!("Worker {} got a job; executing.", id);
                     job();
                 }
                 Message::Terminate => {
-                    println!("Worker {} to terminate.", id);
+                    //eprintln!("Worker {} to terminate.", id);
                     break;
                 }
             }
@@ -77,7 +77,7 @@ impl ThreadPool {
 impl Drop for ThreadPool {
     fn drop(&mut self) {
         // Send a terminate message to all workers just in case
-        println!("Terminating all workers");
+        //eprintln!("Terminating all workers");
         for _ in &self.threads {
             self.sender.send(Message::Terminate).unwrap();
         }
@@ -85,7 +85,7 @@ impl Drop for ThreadPool {
         for worker in &mut self.threads {
             // Vectors is already a collection that can be iterated
             // just use it as mutable reference so that iterator is also mutable
-            println!("Joining worker: {}", worker.id);
+            //eprintln!("Joining worker: {}", worker.id);
             if let Some(thread) = worker.thread.take() {
                 thread.join().unwrap();
             } 

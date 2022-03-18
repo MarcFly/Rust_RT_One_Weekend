@@ -52,20 +52,25 @@ use std::sync::Arc;
 pub struct sphere {
     pub center: point3,
     pub radius: f64,
-    pub mat: Arc<dyn Material>,
+    pub mat: Box<*const dyn Material>,
 }
 
+use crate::materials::*;
+
+
 impl sphere {
-    pub fn new() -> sphere {sphere{center: point3::new(), radius: 1., mat: Arc::new(Default{})}}
-    pub fn from(p: point3, r: f64) -> sphere { sphere{center: p, radius: r, mat: Arc::new(Default{})}}
-    pub fn from_mat(p: point3, r: f64, mat_p: Arc::<dyn Material>) -> sphere {
-        sphere { center: p, radius: r, mat: Arc::clone(&mat_p)}
+    pub fn new() -> sphere {sphere{center: point3::new(), radius: 1., mat: Box::new(&def_material)}}
+    pub fn from(p: point3, r: f64) -> sphere { sphere{center: p, radius: r, mat: Box::new(&def_material)}}
+    pub fn from_mat(p: point3, r: f64, mat_p: Box::<*const dyn Material>) -> sphere {
+        sphere { center: p, radius: r, mat: mat_p}
     }
 }
 
 use crate::rtow_math::hit::*;
+unsafe impl Send for sphere {}
+unsafe impl Sync for sphere {}
 impl Hittable for sphere {
-    fn hit(&self, r: &ray, t_min: f64, t_max: f64, rec:&mut hit_record) -> bool {
+    fn hit(&self, r: &ray, t_min: f64, t_max: f64, rec:& mut hit_record) -> bool {
         let origin_center = r.origin - self.center;
         let a = r.dir.length_squared();
         let half_b = origin_center.dot(&r.dir);
@@ -89,7 +94,7 @@ impl Hittable for sphere {
         rec.n = (rec.p - self.center) / self.radius; // This is bad, only returns normal pointing outwards
         // What if we need to differentiate between from and back face!
         rec.set_face_normal(r);
-        rec.mat = Arc::clone(&self.mat);
+        rec.mat = Arc::new(Box::new(*self.mat));
 
         true
     }   

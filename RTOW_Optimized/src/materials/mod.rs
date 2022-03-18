@@ -13,6 +13,7 @@ pub trait Material {
 }
 
 pub struct Default {}
+pub static def_material: Default = Default{};
 
 impl Material for Default {
     fn scatter(&self, r: &ray, rec: &hit_record, attenuation: &mut colorRGB, scatter: &mut ray) -> bool {
