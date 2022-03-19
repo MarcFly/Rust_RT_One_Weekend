@@ -77,6 +77,9 @@ impl ops::Div<f64> for vec3_scalar {
     }
 }
 
+use std::sync::Arc;
+use std::sync::Mutex;
+
 impl vec3 {
     pub fn new() -> vec3 { vec3{v: [0.,0.,0.], } }
     pub fn from(x:f64, y:f64, z:f64) -> vec3 { vec3{v: [x,y,z]}}
@@ -141,6 +144,10 @@ impl vec3 {
         let scale = 1. / samples_pp;
         let mut col = *self * scale;
         col = col.sqrt(); // Gamma Correct
+        let t_col = colorRGB::from(
+            (256.0 * num::clamp(col.v[0], 0., 0.999)),
+            (256.0 * num::clamp(col.v[1], 0., 0.999)),
+            (256.0 * num::clamp(col.v[2], 0., 0.999)));
         // Test without clamp
         print!("{} {} {}\n", 
             (256.0 * num::clamp(col.v[0], 0., 0.999)) as i32,
@@ -148,17 +155,16 @@ impl vec3 {
             (256.0 * num::clamp(col.v[2], 0., 0.999)) as i32);
     }
 
-    pub fn write_col_to(&self, samples_pp: f64, pixel: &mut colorRGB)
+    pub fn write_col_to(&self, pixel:  Arc<Mutex<Box<Vec<colorRGB>>>>, idx: usize)
     {
-        let scale = 1. / samples_pp;
-        let mut col = *self * scale;
-        col = col.sqrt(); // Gamma Correct
+        //let scale = 1. / samples_pp;
+        let mut col = *self; // * scale;
+        //col = col.sqrt(); // Gamma Correct
         // Test without clamp
-        *pixel = colorRGB::from(
-            (256.0 * num::clamp(col.v[0], 0., 0.999)),
-            (256.0 * num::clamp(col.v[1], 0., 0.999)),
-            (256.0 * num::clamp(col.v[2], 0., 0.999))
-        );
+        let mut check = true;
+        let mut pix = pixel.lock().unwrap();
+        pix[idx] = colorRGB::from_vec(*self);
+
     }
 
     pub fn clamp(&mut self, min: f64, max:f64) {
@@ -173,3 +179,4 @@ impl vec3 {
 }
 
 
+unsafe impl Send for vec3 {}

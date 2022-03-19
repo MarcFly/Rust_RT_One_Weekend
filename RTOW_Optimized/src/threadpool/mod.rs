@@ -2,6 +2,7 @@ use std::thread;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+mod mt_vec;
 pub enum Message {
     NewJob(Job),
     Terminate,
