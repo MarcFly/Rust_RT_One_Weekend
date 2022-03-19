@@ -8,6 +8,8 @@ mod materials;
 mod optimized;
 
 mod threadpool;
+mod taskrunner;
+use crate::taskrunner::*;
 use crate::threadpool::*;
 
 use simple_stopwatch::Stopwatch;
@@ -104,7 +106,7 @@ fn main() {
 
     let arc_hit = Arc::new(hittables);
     {
-        let tp =  ThreadPool::new(num_thread);
+        let tp =  Runner::new(num_thread);
 
         // Throw a ray at every pixel
         for i in (0..(image_height)).rev() {
@@ -117,7 +119,7 @@ fn main() {
                 //let mut curr_pixel: *mut colorRGB = &mut VecPoint[i as usize * j as usize] as * mut colorRGB;
                 let mut curr_pixel = Arc::clone(&arc_cols);
                 let idx = (image_width * (image_height - i - 1 ) as usize + j ); //as usize;
-                tp.execute(move || {
+                tp.add_task(move || {
                     let mut pixel = colorRGB::new();
                     for s in (0..samples) {
                         //let x_sum = (s as f64).sqrt()
