@@ -106,7 +106,7 @@ fn main() {
 
     let arc_hit = Arc::new(hittables);
     {
-        let tp =  Runner::new(num_thread);
+        let mut tp =  Runner::new(num_thread);
 
         // Throw a ray at every pixel
         for i in (0..(image_height)).rev() {
@@ -133,8 +133,11 @@ fn main() {
                 
             }
         }
+        tp.ocupancy();
+
+        eprintln!("Finished sending tasks at {} ms", timer.ms());
     }
-    
+    eprintln!("Tasks finished running at {} ms", timer.ms());
     {
         let mut vec = arc_cols.lock().unwrap();
 
