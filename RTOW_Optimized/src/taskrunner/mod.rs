@@ -6,7 +6,7 @@ use std::sync::mpsc;
 
 use std::collections::VecDeque;
 
-pub type Job = Box<dyn FnOnce() + Send + Sync + 'static>;
+pub type Job = Box<dyn FnOnce() + Send + 'static>;
 
 pub enum Message {
     NewJob(Job),
@@ -20,12 +20,12 @@ use std::sync::atomic::AtomicI32;
 struct Worker {
     id: usize,
     thread: Option<thread::JoinHandle<()>>,
-    tasks: Arc<RwLock<Box<VecDeque<Message>>>>,
+    tasks: Arc<Mutex<Box<VecDeque<Message>>>>,
 }
 
 impl Worker {
     fn new(id: usize, safe_send: mpsc::Sender<Message>) -> Worker {
-        let queue = Arc::new(RwLock::new(Box::new(VecDeque::new())));
+        let queue = Arc::new(Mutex::new(Box::new(VecDeque::new())));
         let move_q = Arc::clone(&queue);
 
         let thread_b = thread::spawn(move || loop {
@@ -33,7 +33,7 @@ impl Worker {
                 let mut msg;
                 {
                     let mut ret: Option<Message> = { 
-                        let mut task = move_q.write().unwrap();
+                        let mut task = move_q.lock().unwrap();
                         task.pop_front()
                     };
 
@@ -41,7 +41,7 @@ impl Worker {
                         Some(smth) => msg = smth,
                         None => {safe_send.send(Message::Starved(id)); sleep_ms(1); continue},
                     }
-                    
+
                 }
 
                 match msg {
@@ -81,7 +81,7 @@ impl Runner {
     }
 
     pub fn add_task<F>(&mut self, f: F)
-    where F: FnOnce() + Send + Sync + 'static,
+    where F: FnOnce() + Send + 'static,
     {
         //let mut least_num = i32::MAX;
         //let mut idx_least = 0;
@@ -90,7 +90,7 @@ impl Runner {
         //    least_num = if least_num > len { idx_least = t.id; len} else {least_num};
         //}
 
-        self.threads[self.last_add].tasks.write().unwrap().push_back(Message::NewJob(Box::new(f)));
+        self.threads[self.last_add].tasks.lock().unwrap().push_back(Message::NewJob(Box::new(f)));
         self.last_add = if self.last_add < self.threads.len() - 1 { self.last_add + 1} else {0};
 
         
@@ -98,7 +98,7 @@ impl Runner {
 
     pub fn ocupancy(&self) {
         for t in &self.threads {
-            eprintln!("Thread {} with {} tasks.", t.id, t.tasks.read().unwrap().len());
+            eprintln!("Thread {} with {} tasks.", t.id, t.tasks.lock().unwrap().len());
         }
     }
 
@@ -136,7 +136,7 @@ impl Runner {
             //let mut write_q = self.arc_q.write().unwrap();
             for t in &self.threads {
                 //add_taskself.sender.send(Message::Terminate).unwrap();
-                t.tasks.write().unwrap().push_back(Message::Terminate);
+                t.tasks.lock().unwrap().push_back(Message::Terminate);
                 //write_q.push_back(Message::Terminate);
             }
         }
@@ -158,7 +158,7 @@ impl Drop for Runner {
             //let mut write_q = self.arc_q.write().unwrap();
             for t in &self.threads {
                 //add_taskself.sender.send(Message::Terminate).unwrap();
-                t.tasks.write().unwrap().push_back(Message::Terminate);
+                t.tasks.lock().unwrap().push_back(Message::Terminate);
                 //write_q.push_back(Message::Terminate);
             }
         }

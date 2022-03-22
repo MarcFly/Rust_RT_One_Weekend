@@ -11,6 +11,7 @@ mod threadpool;
 mod taskrunner;
 use crate::taskrunner::*;
 use crate::threadpool::*;
+use std::sync::mpsc;
 
 use simple_stopwatch::Stopwatch;
 
@@ -56,11 +57,15 @@ fn ray_hits(r: &ray, obj: Arc<Vec<Box<dyn Hittable>>>, depth_: i32) ->  colorRGB
 static samples: i32 = 100;
 static depth: i32 = 10;
 
+enum Pixel {
+    RGB(usize, colorRGB),
+}
+
 fn main() {
     let mut timer = Stopwatch::start_new();
 
     let aspect_ratio = 16. / 9.;
-    let image_width = 1200;
+    let image_width = 400;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
     let iw_f64 = image_width as f64;
     let ih_f64 = image_height as f64;
@@ -73,20 +78,7 @@ fn main() {
     let aperture = 0.1;
     let cam = camera::from_all(og, lookat, vup, 20., aspect_ratio, aperture, focus_dist);
     
-    // New Materials
-    let mat_ground = lambertian{albedo: colorRGB::from(0.8, 0.8, 0.0)};
-    let mat_center = lambertian{albedo: colorRGB::from(0.1, 0.2, 0.5)}; //, alpha:0.2, index_refr: 1.5});
-    let mat_left = dielectric{albedo: colorRGB::from(0.8, 0.4, 0.1), alpha: 1.0, index_refr: 1.5};
-    let mat_left_2 = dielectric{albedo: colorRGB::from(0.8, 0.4, 0.1), alpha: 1.0, index_refr: 1.5};
-    let mat_right = metal{albedo: colorRGB::from(0.8, 0.6, 0.2), fuzz: 0.};
-    
     let mut hittables: Vec<Box<dyn Hittable>> = Vec::new();
-    //hittables.push(Box::new(sphere::from_mat(point3::from(0., 0., -1.), 0.5, Box::new(&mat_center))));
-    ////hittables.push(Box::new(sphere::from_mat(point3::from(0., 0., -1.), -0.4, mat_center.clone())));
-    //hittables.push(Box::new(sphere::from_mat(point3::from(0., -100.5, -1.), 100., Box::new(&mat_ground))));
-    //hittables.push(Box::new(sphere::from_mat(point3::from(-1., 0., -1.), 0.5, Box::new(&mat_left))));
-    //hittables.push(Box::new(sphere::from_mat(point3::from(-1., 0., -1.), -0.4, Box::new(&mat_left_2))));
-    //hittables.push(Box::new(sphere::from_mat(point3::from(1., 0., -1.), 0.5, Box::new(&mat_right))));
     let mut material_vec : Vec<Arc<dyn Material>> = Vec::new();
 
     material_vec.push(Arc::new(lambertian{albedo: colorRGB::from(0.5,0.5,0.5)}));
@@ -130,20 +122,23 @@ fn main() {
 
     println!("P3\n{} {}\n255\n", image_width, image_height);
     
-    let mut arc_cols: Arc<Mutex<Box<Vec<Arc<Mutex<colorRGB>>>>>> = Arc::new(Mutex::new(Box::new(Vec::new()))); // VecPoint));
+    let mut arc_cols: Arc<Mutex<Box<Vec<colorRGB>>>> = Arc::new(Mutex::new(Box::new(Vec::new()))); // VecPoint));
     {
         let mut vec = arc_cols.lock().unwrap();
-        for i in 0..image_width * image_height as usize {
-            vec.push(Arc::new(Mutex::new(colorRGB::new())));
-        }
-        //vec.resize(image_width * image_height as usize, Arc::new(Mutex::new(colorRGB::new())));
+        //for i in 0..image_width * image_height as usize {
+        //    vec.push(Arc::new(Mutex::new(colorRGB::new())));
+        //}
+        vec.resize(image_width * image_height as usize, colorRGB::new());
     }
     eprintln!("Finished creating individual ArcMutexColorRGB at {} ms", timer.ms());
     //let num_thread = std::thread::available_parallelism().unwrap().get();
+    //let mut sender: mpsc::Sender<Pixel>;
+    //let mut receiver: mpsc::Receiver<Pixel>;
+    let (sender, receiver) = mpsc::channel();
 
     let arc_hit = Arc::new(hittables);
     {
-        let mut tp =  Runner::new(24);
+        let mut tp =  Runner::new(12);
         let mut v_smth = arc_cols.lock().unwrap();
         // Throw a ray at every pixel
         for i in (0..(image_height)).rev() {
@@ -155,8 +150,9 @@ fn main() {
                 //let mut mut_col = &mut color_arr[(i*j as i32) as usize];
                 //let mut curr_pixel: *mut colorRGB = &mut VecPoint[i as usize * j as usize] as * mut colorRGB;
                 let idx = (image_width * (image_height - i - 1 ) as usize + j ); //as usize;
-                let mut curr_pixel = Arc::clone(&(v_smth[idx]));
+                //let mut curr_pixel = Arc::clone(&(v_smth[idx]));
                 
+                let sender_cpy = sender.clone();
                 tp.add_task(move || {
                     let mut pixel = colorRGB::new();
                     for s in (0..samples) {
@@ -167,22 +163,37 @@ fn main() {
                         pixel = pixel + ray_hits(&r, Arc::clone(&hit_arc), depth);
                     }
 
-                    pixel.write_col_to(curr_pixel, idx);
+                    sender_cpy.send(Pixel::RGB(idx, pixel));
+                    //pixel.write_col_to(curr_pixel, idx);
                 });
                 
             }
         }
-        eprintln!("Finished sending tasks at {} ms", timer.ms());
-        //tp.ocupancy();
-        eprintln!("Start thread wait at {} ms", timer.ms());
-        tp.wait_all();
-        eprintln!("Waited threads, finished at {} ms", timer.ms());
+
+        let mut num_pixels = image_width * image_height as usize;
+        //let mut vec = arc_cols.lock().unwrap();
+        while (num_pixels > 0) {
+            match receiver.recv().unwrap() {
+                Pixel::RGB(idx, col) => {
+                    v_smth[idx] = col;
+                    num_pixels -= 1;
+                },
+                _ => ()
+            }
+        }
+        //{
+        //    eprintln!("Finished sending tasks at {} ms", timer.ms());
+        //    //tp.ocupancy();
+        //    eprintln!("Start thread wait at {} ms", timer.ms());
+        //    tp.wait_all();
+        //    eprintln!("Waited threads, finished at {} ms", timer.ms());
+        //}
     }
     eprintln!("Tasks finished running at {} ms", timer.ms());
     {
         let mut vec = arc_cols.lock().unwrap();
         for i in (0..vec.len()) {
-            vec[i].lock().unwrap().write_color(samples as f64);
+            vec[i].write_color(samples as f64);
         }
     }
 

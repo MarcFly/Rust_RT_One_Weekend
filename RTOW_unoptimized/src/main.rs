@@ -112,7 +112,7 @@ fn final_render_ch13() {
     let depth = 10;
 
     let aspect_ratio = 16. / 9.;
-    let image_width = 1200;
+    let image_width = 400;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
     let focal_length = 1.;
     
