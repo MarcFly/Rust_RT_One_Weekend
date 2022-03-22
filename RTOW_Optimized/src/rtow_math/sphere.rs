@@ -52,16 +52,16 @@ use std::sync::Arc;
 pub struct sphere {
     pub center: point3,
     pub radius: f64,
-    pub mat: Box<*const dyn Material>,
+    pub mat: Arc<dyn Material>,
 }
 
 use crate::materials::*;
 
 
 impl sphere {
-    pub fn new() -> sphere {sphere{center: point3::new(), radius: 1., mat: Box::new(&def_material)}}
-    pub fn from(p: point3, r: f64) -> sphere { sphere{center: p, radius: r, mat: Box::new(&def_material)}}
-    pub fn from_mat(p: point3, r: f64, mat_p: Box::<*const dyn Material>) -> sphere {
+    //pub fn new() -> sphere {sphere{center: point3::new(), radius: 1., mat: Arc::new(def_material)}}
+    //pub fn from(p: point3, r: f64) -> sphere { sphere{center: p, radius: r, mat: Arc::new(def_material)}}
+    pub fn from_mat(p: point3, r: f64, mat_p: Arc::<dyn Material>) -> sphere {
         sphere { center: p, radius: r, mat: mat_p}
     }
 }
@@ -94,7 +94,7 @@ impl Hittable for sphere {
         rec.n = (rec.p - self.center) / self.radius; // This is bad, only returns normal pointing outwards
         // What if we need to differentiate between from and back face!
         rec.set_face_normal(r);
-        rec.mat = Arc::new(Box::new(*self.mat));
+        rec.mat = Arc::clone(&self.mat);
 
         true
     }   

@@ -47,8 +47,8 @@ use std::rc::Rc;
 pub fn output_cam_focus() {
     let timer = Stopwatch::start_new();
 
-    let samples = 100;
-    let depth = 50;
+    let samples = 200;
+    let depth = 100;
 
     let aspect_ratio = 16. / 9.;
     let image_width = 400;

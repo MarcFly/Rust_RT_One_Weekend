@@ -16,7 +16,7 @@ fn main() {
     let mut timer = Stopwatch::start_new();
     Chapters1_7();
     Chapters8_12();
-    //final_render_ch13();
+    final_render_ch13();
 
 
 
@@ -57,7 +57,7 @@ fn Chapters8_12() {
     //output_materials();
     //output_materials_refract();
     //output_cam_move();
-    output_cam_focus();
+    //output_cam_focus();
 }
 
 

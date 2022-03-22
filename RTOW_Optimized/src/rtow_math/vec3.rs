@@ -155,7 +155,7 @@ impl vec3 {
             (256.0 * num::clamp(col.v[2], 0., 0.999)) as i32);
     }
 
-    pub fn write_col_to(&self, pixel:  Arc<Mutex<Box<Vec<colorRGB>>>>, idx: usize)
+    pub fn write_col_to(&self, pixel:  Arc<Mutex<colorRGB>>, idx: usize)
     {
         //let scale = 1. / samples_pp;
         let mut col = *self; // * scale;
@@ -163,7 +163,7 @@ impl vec3 {
         // Test without clamp
         let mut check = true;
         let mut pix = pixel.lock().unwrap();
-        pix[idx] = colorRGB::from_vec(*self);
+        *pix = colorRGB::from_vec(*self);
 
     }
 

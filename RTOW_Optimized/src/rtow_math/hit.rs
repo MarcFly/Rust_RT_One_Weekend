@@ -11,17 +11,18 @@ pub struct hit_record {
     pub n: vec3,
     pub t: f64,
     pub front_face: bool,
-    pub mat: Arc<Box<*const dyn Material>>,
+    pub mat: Arc<dyn Material>,
 }
 
 impl hit_record {
     pub fn new() -> hit_record { 
+        let new_def = Default{};
             hit_record { 
                 p: point3::new(), 
                 n: vec3::new(), 
                 t: std::f64::INFINITY, 
                 front_face: true,
-                mat: Arc::new(Box::new(&def_material)),
+                mat: Arc::new(new_def),
             }
         }
     
