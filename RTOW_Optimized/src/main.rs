@@ -38,9 +38,10 @@ fn ray_hits(r: &ray, obj: Arc<Vec<Box<dyn Hittable>>>, depth_: i32) ->  colorRGB
     // Made recursive, with depth limit now
     // Will start generating rays around in random_in_sphere
     // Setting t_min at 0.001 increases light MASSIVELY, why?
+    let mut attenuation = colorRGB::new();
     if hit_list(&*obj, 0.0001, std::f64::INFINITY, &mut rec, r) {
         let mut scattered = ray::new();
-        let mut attenuation = colorRGB::new();
+        //let mut attenuation = colorRGB::new();
         unsafe{
         if(Material::scatter(&*rec.mat, r, &rec, &mut attenuation, &mut scattered)){
             return ray_hits(&scattered, obj, next_depth) * attenuation;
@@ -65,7 +66,7 @@ fn main() {
     let mut timer = Stopwatch::start_new();
 
     let aspect_ratio = 16. / 9.;
-    let image_width = 400;
+    let image_width = 1200;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
     let iw_f64 = image_width as f64;
     let ih_f64 = image_height as f64;
