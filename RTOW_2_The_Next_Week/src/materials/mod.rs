@@ -39,7 +39,7 @@ impl Material for lambertian {
         if(scatter_dir.near_zero()) {
             scatter_dir = rec.n;
         }
-        *scatter = ray::from(rec.p, scatter_dir);
+        *scatter = ray::from_t(rec.p, scatter_dir, r.time);
         *attenuation = self.albedo;
         true
     }
@@ -57,7 +57,7 @@ impl Material for metal {
         let mut scatter_dir = r.dir.unit_vec().reflect(&rec.n).unit_vec();
         scatter_dir = (scatter_dir + random_in_sphere() * self.fuzz).unit_vec(); // Fuzzy reflections   
 
-        *scatter = ray::from(rec.p, scatter_dir);
+        *scatter = ray::from_t(rec.p, scatter_dir, r.time);
         *attenuation = self.albedo;
         
         (scatter.dir.dot(&rec.n) > 0.)
@@ -103,7 +103,7 @@ impl Material for dielectric {
             unit.refract(&rec.n, ratio)
         };
 
-        *scatter = ray::from(rec.p, refracted);
+        *scatter = ray::from_t(rec.p, refracted, r.time);
         true
     }
 }

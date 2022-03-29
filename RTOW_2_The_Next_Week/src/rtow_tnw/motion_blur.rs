@@ -67,14 +67,14 @@ fn ray_hits(r: &ray, obj: Arc<Vec<Box<dyn Hittable>>>, depth_: i32) ->  colorRGB
     colorRGB::from(1.,1.,1.)*(1.0 - t) + colorRGB::from(0.5, 0.7, 1.0) * t
 }
 
-static samples: i32 = 100;
+static samples: i32 = 50;
 static depth: i32 = 10;
 
 enum Pixel {
     RGB(usize, colorRGB),
 }
 
-pub fn shadow_rays() {
+pub fn render() {
     let mut timer = Stopwatch::start_new();
 
     let aspect_ratio = 16. / 9.;
@@ -89,7 +89,7 @@ pub fn shadow_rays() {
     let vup = vec3::from(0., 1.,0.);
     let focus_dist = (og - lookat).length();
     let aperture = 0.1;
-    let cam = camera::from_all(og, lookat, vup, 20., aspect_ratio, aperture, focus_dist, 0., 0.);
+    let cam = camera::from_all(og, lookat, vup, 20., aspect_ratio, aperture, focus_dist, 0., 1.);
     
 
     // SETUP Lights for direct shadow rays
@@ -113,12 +113,32 @@ pub fn shadow_rays() {
             let mat_rng = rand_f64();
             let center = point3::from(i as f64 + 0.9 * rand_f64(), 0.2, j as f64 + 0.9*rand_f64());
             if(center - point3::from(4.,0.2,0.)).length() > 0.9 {
-                if (mat_rng < 0.8) { // diffuse
+                if (mat_rng < 0.2) { // diffuse
                     let albedo = colorRGB::from(rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.));
                     material_vec.push(Arc::new(lambertian{albedo}));
                     let s = material_vec.len();
                     hittables.push(Box::new(sphere::from_mat(center, 0.2, material_vec[s-1].clone())));
-                } else if mat_rng < 0.95 { // metal
+                } else if mat_rng < 0.8 {
+                    let albedo = colorRGB::from(rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.));
+                    material_vec.push(Arc::new(lambertian{albedo}));
+                    let s = material_vec.len();
+                    let mov_sph = moving_sphere::from_all(
+                        center, 
+                        center + point3::from(0., 0.5, 0.), 
+                        0., 
+                        1., 
+                        0.2,
+                        material_vec[s-1].clone());
+
+                    hittables.push(Box::new(moving_sphere::from_all(
+                        center, 
+                        center + point3::from(0., 0.5, 0.), 
+                        0., 
+                        1., 
+                        0.2,
+                        material_vec[s-1].clone())));
+                }
+                 else if mat_rng < 0.95 { // metal
                     let albedo = colorRGB::from(rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.));
                     let fuzz = rand_f64_r(0., 0.5);
                     material_vec.push(Arc::new(metal{albedo, fuzz}));
@@ -156,19 +176,20 @@ pub fn shadow_rays() {
 
     println!("P3\n{} {}\n255\n", image_width, image_height);
     
-    let mut arc_cols: Arc<Mutex<Box<Vec<colorRGB>>>> = Arc::new(Mutex::new(Box::new(Vec::new()))); // VecPoint));
+    //let mut arc_cols: Arc<Mutex<Box<Vec<colorRGB>>>> = Arc::new(Mutex::new(Box::new(Vec::new()))); // VecPoint));
+    let mut arc_cols: Arc<Mutex<Box<Vec<Arc<Mutex<colorRGB>>>>>> = Arc::new(Mutex::new(Box::new(Vec::new())));
     {
         let mut vec = arc_cols.lock().unwrap();
-        //for i in 0..image_width * image_height as usize {
-        //    vec.push(Arc::new(Mutex::new(colorRGB::new())));
-        //}
-        vec.resize(image_width * image_height as usize, colorRGB::new());
+        for i in 0..image_width * image_height as usize {
+            vec.push(Arc::new(Mutex::new(colorRGB::new())));
+        }
+        //vec.resize(image_width * image_height as usize, colorRGB::new());
     }
     eprintln!("Finished creating individual ArcMutexColorRGB at {} ms", timer.ms());
     //let num_thread = std::thread::available_parallelism().unwrap().get();
     //let mut sender: mpsc::Sender<Pixel>;
     //let mut receiver: mpsc::Receiver<Pixel>;
-    let (sender, receiver) = mpsc::channel();
+    //let (sender, receiver) = mpsc::channel();
 
     let arc_hit = Arc::new(hittables);
     {
@@ -186,25 +207,27 @@ pub fn shadow_rays() {
                 
                 let light_arc = Arc::clone(&arc_lights);
 
-                let sender_cpy = sender.clone();
+                //let sender_cpy = sender.clone();
+                let curr_pixel = Arc::clone(&v_smth[idx]);
+
                 tp.add_task(move || {
                     let mut pixel = colorRGB::new();
                     for s in (0..samples) {
                         //let x_sum = (s as f64).sqrt()
                         let u = (float_j + rand_f64()) / (iw_f64 - 1.);
                         let v = (float_i + rand_f64()) / (ih_f64 - 1.);
-                        let r = cam.focus_ray(u, v);
+                        let r = cam.focus_time_ray(u, v);
                         let ambient_indirect = ray_hits(&r, Arc::clone(&hit_arc), depth);
-                        let lights_direct = light_hits(&r, Arc::clone(&light_arc), Arc::clone(&hit_arc));
-                        pixel = pixel + ambient_indirect + lights_direct;
+                        //let lights_direct = light_hits(&r, Arc::clone(&light_arc), Arc::clone(&hit_arc));
+                        pixel = pixel + ambient_indirect; // + lights_direct;
                     }                   
                     //let u = (float_j) / (iw_f64 - 1.);
                     //let v = (float_i) / (ih_f64 - 1.);
                     //let r = cam.focus_ray(u, v);
                     //pixel = pixel + light_hits(&r, Arc::clone(&light_arc), Arc::clone(&hit_arc)) * (samples as f64);
 
-                    sender_cpy.send(Pixel::RGB(idx, pixel));
-                    //pixel.write_col_to(curr_pixel, idx);
+                    //sender_cpy.send(Pixel::RGB(idx, pixel));
+                    pixel.write_col_to(curr_pixel, idx);
                 });
                 
             }
@@ -212,15 +235,15 @@ pub fn shadow_rays() {
 
         let mut num_pixels = image_width * image_height as usize;
         //let mut vec = arc_cols.lock().unwrap();
-        while (num_pixels > 0) {
-            match receiver.recv().unwrap() {
-                Pixel::RGB(idx, col) => {
-                    v_smth[idx] = col;
-                    num_pixels -= 1;
-                },
-                _ => ()
-            }
-        }
+        //while (num_pixels > 0) {
+        //    match receiver.recv().unwrap() {
+        //        Pixel::RGB(idx, col) => {
+        //            v_smth[idx] = col;
+        //            num_pixels -= 1;
+        //        },
+        //        _ => ()
+        //    }
+        //}
         //{
         //    eprintln!("Finished sending tasks at {} ms", timer.ms());
         //    //tp.ocupancy();
@@ -233,7 +256,7 @@ pub fn shadow_rays() {
     {
         let mut vec = arc_cols.lock().unwrap();
         for i in (0..vec.len()) {
-            vec[i].write_color(samples as f64);
+            vec[i].lock().unwrap().write_color(samples as f64);
         }
     }
 

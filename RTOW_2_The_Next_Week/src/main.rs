@@ -10,10 +10,22 @@ mod materials;
 mod objects;
 mod threadpool;
 mod taskrunner;
+mod rtow_tnw;
 
 use simple_stopwatch::Stopwatch;
 
 fn main() {
-    // RTOW Improvements
+    // rtow_improvements();
+    rtow_tnw_fns();
+
+}
+
+fn rtow_improvements() {
     shadow_rays();
+}
+
+
+use crate::rtow_tnw::*;
+fn rtow_tnw_fns() {
+    motion_blur::render();
 }

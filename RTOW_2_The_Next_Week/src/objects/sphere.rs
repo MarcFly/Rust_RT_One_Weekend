@@ -130,3 +130,66 @@ pub fn random_in_sphere_bad() -> point3 {
         rand_f64_r(*defines::side_min, *defines::side_max),
     )
 }
+
+// MOVING SPHERE
+
+pub struct moving_sphere {
+    pub center0: point3,
+    pub center1: point3,
+    pub time0: f64,
+    pub time1: f64,
+    pub radius: f64,
+    pub mat: Arc<dyn Material>,
+}
+
+
+impl moving_sphere {    
+    pub fn from_all(center0: point3, center1: point3, time0: f64, time1: f64, r: f64, mat: Arc::<dyn Material>) -> moving_sphere {
+        moving_sphere {
+            center0,
+            center1,
+            time0,
+            time1,
+            radius: r,
+            mat,
+        }
+    }
+
+    pub fn center(&self, time: f64) -> point3 {
+        point3::from_vec(self.center0 + (self.center1 - self.center0) * ((time - self.time0) / (self.time1 - self.time0)))
+    }
+}
+
+
+unsafe impl Send for moving_sphere {}
+unsafe impl Sync for moving_sphere {}
+impl Hittable for moving_sphere {
+    fn hit(&self, r: &ray, t_min: f64, t_max: f64, rec:& mut hit_record) -> bool {
+        let origin_center = r.origin - self.center(r.time);
+        let a = r.dir.length_squared();
+        let half_b = origin_center.dot(&r.dir);
+        let c = origin_center.dot(&origin_center) - self.radius*self.radius;
+        
+        let mut discriminant = half_b*half_b - a*c;
+        //discriminant = check_discriminant(discriminant, half_b, a);
+        if (discriminant < 0.) {return false}
+        
+        let sq_discr = discriminant.sqrt();
+        let mut root = (-half_b - sq_discr) / a;
+        if(root < t_min || root > t_max) {
+            root = (-half_b +sq_discr) / a;
+            if(root < t_min || t_max < root) {
+                return false
+            }
+        }
+
+        rec.t = root;
+        rec.p = r.at(rec.t);
+        rec.n = (rec.p - self.center(r.time)) / self.radius; // This is bad, only returns normal pointing outwards
+        // What if we need to differentiate between from and back face!
+        rec.set_face_normal(r);
+        rec.mat = Arc::clone(&self.mat);
+
+        true
+    }   
+}
