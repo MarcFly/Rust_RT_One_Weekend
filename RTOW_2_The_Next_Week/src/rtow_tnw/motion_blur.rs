@@ -30,7 +30,7 @@ fn light_hits(r: &ray, lights: Arc<Vec<light>>, obj: Arc<Vec<Box<dyn Hittable>>>
     let mut color = colorRGB::new();
     let l_slice = lights.iter().as_slice();
     for l in l_slice {
-        let new_r = ray::from(rec.p, l.center - rec.p);
+        let new_r = ray::from_t(rec.p, l.center - rec.p, r.time);
         if !hit_list(&*obj, 0.0001, std::f64::INFINITY, &mut rec, &new_r) {
             color = color +  l.color * l.intensity * ( 1. / (4. * 3.14 * new_r.dir.length_squared())); // No light loss for now
         }
@@ -218,8 +218,8 @@ pub fn render() {
                         let v = (float_i + rand_f64()) / (ih_f64 - 1.);
                         let r = cam.focus_time_ray(u, v);
                         let ambient_indirect = ray_hits(&r, Arc::clone(&hit_arc), depth);
-                        //let lights_direct = light_hits(&r, Arc::clone(&light_arc), Arc::clone(&hit_arc));
-                        pixel = pixel + ambient_indirect; // + lights_direct;
+                        let lights_direct = light_hits(&r, Arc::clone(&light_arc), Arc::clone(&hit_arc));
+                        pixel = pixel + ambient_indirect + lights_direct;
                     }                   
                     //let u = (float_j) / (iw_f64 - 1.);
                     //let v = (float_i) / (ih_f64 - 1.);
