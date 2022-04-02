@@ -2,6 +2,7 @@ use crate::rtow_math::ray::*;
 use crate::rtow_math::vec3::*;
 use crate::objects::sphere::*;
 use crate::materials::*;
+use crate::objects::aabb::*;
 
 use std::sync::Arc;
 
@@ -12,6 +13,7 @@ pub struct hit_record {
     pub t: f64,
     pub front_face: bool,
     pub mat: Arc<dyn Material>,
+    pub iters: i32,
 }
 
 impl hit_record {
@@ -23,6 +25,7 @@ impl hit_record {
                 t: std::f64::INFINITY, 
                 front_face: true,
                 mat: Arc::new(new_def),
+                iters: 0,
             }
         }
     
@@ -32,10 +35,55 @@ impl hit_record {
     }
 }
 
+use crate::objects::hittable_list::*;
+use std::sync::Mutex;
 pub trait Hittable: Send + Sync {
     fn hit(&self, r: &ray, t_min: f64, t_max: f64, rec:&mut hit_record) -> bool;
+    fn get_aabb(&self, time0: f64, time1: f64) -> (bool, aabb);
+
+    fn compare(&self, other: &Box<dyn Hittable>, axis: usize) -> bool {
+        let (check, box1) = self.get_aabb(0., 0.);
+        let (check2, box2) = other.get_aabb(0., 0.);
+
+        if !check || !check2 { panic!("Passed value without aabb!!!!")};
+
+        box1.min.v[axis] < box2.min.v[axis]
+    }
+
+    fn hit_debug(&self, r: &ray, t_min: f64, t_max: f64, rec:&mut hit_record) -> bool;
+
+    fn fill_list(&self, list: &mut Arc<Mutex<hittable_list>>);
 }
 
+pub fn compare_x(main: &Box<dyn Hittable>, other: &Box<dyn Hittable>) -> std::cmp::Ordering {
+    let (check, box1) = main.get_aabb(0., 0.);
+    let (check2, box2) = other.get_aabb(0., 0.);
+
+    if !check || !check2 { panic!("Passed value without aabb!!!!")};
+    
+    if box1.min.v[0] < box2.min.v[0] { std::cmp::Ordering::Less }
+    else { std::cmp::Ordering::Greater }
+}
+
+pub fn compare_y(main: &Box<dyn Hittable>, other: &Box<dyn Hittable>) -> std::cmp::Ordering {
+    let (check, box1) = main.get_aabb(0., 0.);
+    let (check2, box2) = other.get_aabb(0., 0.);
+
+    if !check || !check2 { panic!("Passed value without aabb!!!!")};
+
+    if box1.min.v[1] < box2.min.v[1] { std::cmp::Ordering::Less }
+    else { std::cmp::Ordering::Greater }
+}
+
+pub fn compare_z(main: &Box<dyn Hittable>, other: &Box<dyn Hittable>) -> std::cmp::Ordering {
+    let (check, box1) = main.get_aabb(0., 0.);
+    let (check2, box2) = other.get_aabb(0., 0.);
+
+    if !check || !check2 { panic!("Passed value without aabb!!!!")};
+
+    if box1.min.v[2] < box2.min.v[2] { std::cmp::Ordering::Less }
+    else { std::cmp::Ordering::Greater }
+}
 
 
 pub fn hit_list(hittables: &Vec<Box<dyn Hittable>>, t_min: f64, t_max: f64, rec: &mut hit_record, r: &ray) -> bool {

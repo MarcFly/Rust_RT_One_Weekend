@@ -27,5 +27,6 @@ fn rtow_improvements() {
 
 use crate::rtow_tnw::*;
 fn rtow_tnw_fns() {
-    motion_blur::render();
+    //motion_blur::render();
+    bvh_test::render();
 }
