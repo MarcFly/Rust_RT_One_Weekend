@@ -79,18 +79,4 @@ impl Hittable for light {
     fn get_aabb(&self, time0: f64, time1: f64) -> (bool, aabb) {
         (false, aabb::new()) // Will have to be solved by type...
     }
-
-    fn hit_debug(&self, r: &ray, t_min: f64, t_max: f64, rec:& mut hit_record) -> bool {
-        
-        match self.ltype {
-            LightType::Point => {
-                self.hit_point(r, t_min, t_max, rec)
-            },
-            _ => false
-        }
-    }
-
-    fn fill_list(&self, list: &mut Arc<Mutex<hittable_list>>) {
-        //list.lock().unwrap().obj_list.push(Arc::new(Box::new(*self)));
-    }
 }

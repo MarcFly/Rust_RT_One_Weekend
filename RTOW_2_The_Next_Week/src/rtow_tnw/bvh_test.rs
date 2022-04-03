@@ -32,7 +32,7 @@ fn light_hits(r: &ray, lights: Arc<Vec<light>>, obj: Arc<hittable_list>) -> colo
     let l_slice = lights.iter().as_slice();
     for l in l_slice {
         let new_r = ray::from_t(rec.p, l.center - rec.p, r.time);
-        if !obj.hit_debug(0.0001, std::f64::INFINITY, &mut rec, &new_r) {
+        if !obj.hit_bvh(0.0001, std::f64::INFINITY, &mut rec, &new_r) {
             color = color +  l.color * l.intensity * ( 1. / (4. * 3.14 * new_r.dir.length_squared())); // No light loss for now
         }
     };
@@ -52,7 +52,7 @@ fn ray_hits(r: &ray, obj: Arc<hittable_list>, depth_: i32, debug_iter_vec: Arc<M
     // Will start generating rays around in random_in_sphere
     // Setting t_min at 0.001 increases light MASSIVELY, why?
     let mut attenuation = colorRGB::new();
-    if obj.hit(0.0001, std::f64::INFINITY, &mut rec, r) {
+    if obj.hit_bvh(0.0001, std::f64::INFINITY, &mut rec, r) {
         let mut scattered = ray::new();
         //let mut attenuation = colorRGB::new();
         unsafe{
@@ -70,8 +70,8 @@ fn ray_hits(r: &ray, obj: Arc<hittable_list>, depth_: i32, debug_iter_vec: Arc<M
     colorRGB::from(1.,1.,1.)*(1.0 - t) + colorRGB::from(0.5, 0.7, 1.0) * t
 }
 
-static samples: i32 = 20;
-static depth: i32 = 5;
+static samples: i32 = 50;
+static depth: i32 = 10;
 
 enum Pixel {
     RGB(usize, colorRGB),
@@ -81,7 +81,7 @@ pub fn render() {
     let mut timer = Stopwatch::start_new();
 
     let aspect_ratio = 16. / 9.;
-    let image_width = 40;
+    let image_width = 400;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
     let iw_f64 = image_width as f64;
     let ih_f64 = image_height as f64;
@@ -109,8 +109,8 @@ pub fn render() {
 
     let mut material_vec : Vec<Arc<dyn Material>> = Vec::new();
 
-    //material_vec.push(Arc::new(lambertian{albedo: colorRGB::from(0.5,0.5,0.5)}));
-    //hittables.obj_list.push(Arc::new(Box::new(sphere::from_mat(point3::from(0., -1000., 0.), 1000., Arc::clone(& material_vec[0])))));
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::from(0.5,0.5,0.5)}));
+    hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(0., -1000., 0.), 1000., Arc::clone(& material_vec[0]))));
     
     for i in (-11..11) {
         for j in (-11..11) {
@@ -121,7 +121,7 @@ pub fn render() {
                     let albedo = colorRGB::from(rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.));
                     material_vec.push(Arc::new(lambertian{albedo}));
                     let s = material_vec.len();
-                    hittables.obj_list.push(Arc::new(Box::new(sphere::from_mat(center, 0.2, material_vec[s-1].clone()))));
+                    hittables.obj_list.push(Arc::new(sphere::from_mat(center, 0.2, material_vec[s-1].clone())));
                 } else if mat_rng < 0.8 {
                     let albedo = colorRGB::from(rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.));
                     material_vec.push(Arc::new(lambertian{albedo}));
@@ -134,39 +134,39 @@ pub fn render() {
                         0.2,
                         material_vec[s-1].clone());
 
-                    hittables.obj_list.push(Arc::new(Box::new(moving_sphere::from_all(
+                    hittables.obj_list.push(Arc::new(moving_sphere::from_all(
                         center, 
                         center + point3::from(0., 0.5, 0.), 
                         0., 
                         1., 
                         0.2,
-                        material_vec[s-1].clone()))));
+                        material_vec[s-1].clone())));
                 }
                  else if mat_rng < 0.95 { // metal
                     let albedo = colorRGB::from(rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.));
                     let fuzz = rand_f64_r(0., 0.5);
                     material_vec.push(Arc::new(metal{albedo, fuzz}));
                     let s = material_vec.len();
-                    hittables.obj_list.push(Arc::new(Box::new(sphere::from_mat(center, 0.2, material_vec[s-1].clone()))));
+                    hittables.obj_list.push(Arc::new(sphere::from_mat(center, 0.2, material_vec[s-1].clone())));
                 } else { // glass
                     let albedo = colorRGB::from(rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.));
                     let index_refr = rand_f64_r(1., 2.);
                     let alpha = rand_f64_r(0., 0.5);
                     material_vec.push(Arc::new(dielectric{albedo, alpha, index_refr}));
                     let s = material_vec.len();
-                    hittables.obj_list.push(Arc::new(Box::new(sphere::from_mat(center, 0.2, material_vec[s-1].clone()))));
+                    hittables.obj_list.push(Arc::new(sphere::from_mat(center, 0.2, material_vec[s-1].clone())));
                 }
             }
         }
     }
     material_vec.push(Arc::new(dielectric{albedo: colorRGB::from(1., 1.,1.), alpha: 0., index_refr: 1.5}));
-    hittables.obj_list.push(Arc::new(Box::new(sphere::from_mat(point3::from(0., 1., 0.), 1., material_vec[material_vec.len()-1].clone()))));
+    hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(0., 1., 0.), 1., material_vec[material_vec.len()-1].clone())));
 
     material_vec.push(Arc::new(metal{albedo: colorRGB::from(0.7, 0.6, 0.5), fuzz: 0.}));
-    hittables.obj_list.push(Arc::new(Box::new(sphere::from_mat(point3::from(4., 1., 0.), 1., material_vec[material_vec.len()-1].clone()))));
+    hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(4., 1., 0.), 1., material_vec[material_vec.len()-1].clone())));
 
     material_vec.push(Arc::new(lambertian{albedo: colorRGB::from(0.7,0.6,0.5)}));
-    hittables.obj_list.push(Arc::new(Box::new(sphere::from_mat(point3::from(-4., 1., 0.), 1., material_vec[material_vec.len()-1].clone()))));
+    hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(-4., 1., 0.), 1., material_vec[material_vec.len()-1].clone())));
 
     hittables.construct_bvh(0., 1.);
 
@@ -182,25 +182,25 @@ pub fn render() {
 
     println!("P3\n{} {}\n255\n", image_width, image_height);
     
-    //let mut arc_cols: Arc<Mutex<Box<Vec<colorRGB>>>> = Arc::new(Mutex::new(Box::new(Vec::new()))); // VecPoint));
-    let mut arc_cols: Arc<Mutex<Box<Vec<Arc<Mutex<colorRGB>>>>>> = Arc::new(Mutex::new(Box::new(Vec::new())));
+    let mut arc_cols: Arc<Mutex<Box<Vec<colorRGB>>>> = Arc::new(Mutex::new(Box::new(Vec::new()))); // VecPoint));
+    //let mut arc_cols: Arc<Mutex<Box<Vec<Arc<Mutex<colorRGB>>>>>> = Arc::new(Mutex::new(Box::new(Vec::new())));
     {
         let mut vec = arc_cols.lock().unwrap();
-        for i in 0..image_width * image_height as usize {
-            vec.push(Arc::new(Mutex::new(colorRGB::new())));
-        }
-        //vec.resize(image_width * image_height as usize, colorRGB::new());
+        //for i in 0..image_width * image_height as usize {
+        //    vec.push(Arc::new(Mutex::new(colorRGB::new())));
+        //}
+        vec.resize(image_width * image_height as usize, colorRGB::new());
     }
     eprintln!("Finished creating individual ArcMutexColorRGB at {} ms", timer.ms());
     //let num_thread = std::thread::available_parallelism().unwrap().get();
     //let mut sender: mpsc::Sender<Pixel>;
     //let mut receiver: mpsc::Receiver<Pixel>;
-    //let (sender, receiver) = mpsc::channel();
+    let (sender, receiver) = mpsc::channel();
 
     let arc_hit = Arc::new(hittables);
     let mut arc_iters: Arc<Mutex<Vec<i32>>> = Arc::new(Mutex::new(Vec::new()));
     {
-        let mut tp =  Runner::new(24);
+        let mut tp =  Runner::new(8);
         let mut v_smth = arc_cols.lock().unwrap();
         // Throw a ray at every pixel
         for i in (0..(image_height)).rev() {
@@ -214,8 +214,8 @@ pub fn render() {
                 
                 let light_arc = Arc::clone(&arc_lights);
 //
-                //let sender_cpy = sender.clone();
-                let curr_pixel = Arc::clone(&v_smth[idx]);
+                let sender_cpy = sender.clone();
+                //let curr_pixel = Arc::clone(&v_smth[idx]);
                 let clone_iters = Arc::clone(&arc_iters);
                 tp.add_task(move || {
                     let mut pixel = colorRGB::new();
@@ -225,32 +225,35 @@ pub fn render() {
                         let v = (float_i + rand_f64()) / (ih_f64 - 1.);
                         let r = cam.focus_time_ray(u, v);
                         let ambient_indirect = ray_hits(&r, Arc::clone(&hit_arc), depth, Arc::clone(&clone_iters));
-                        //let lights_direct = light_hits(&r, Arc::clone(&light_arc), Arc::clone(&hit_arc));
-                        pixel = pixel + ambient_indirect; // + lights_direct;
+                        let lights_direct = light_hits(&r, Arc::clone(&light_arc), Arc::clone(&hit_arc));
+                        pixel = pixel + ambient_indirect + lights_direct;
                     }                   
                     //let u = (float_j) / (iw_f64 - 1.);
                     //let v = (float_i) / (ih_f64 - 1.);
                     //let r = cam.focus_ray(u, v);
                     //pixel = pixel + light_hits(&r, Arc::clone(&light_arc), Arc::clone(&hit_arc)) * (samples as f64);
 //
-                    //sender_cpy.send(Pixel::RGB(idx, pixel));
-                    pixel.write_col_to(curr_pixel, idx);
+                    sender_cpy.send(Pixel::RGB(idx, pixel));
+                    //pixel.write_col_to(curr_pixel, idx);
                 });
                 
             }
         }
 //
-        //let mut num_pixels = image_width * image_height as usize;
+        let mut num_pixels = image_width * image_height as usize;
         //let mut vec = arc_cols.lock().unwrap();
-        //while (num_pixels > 0) {
-        //    match receiver.recv().unwrap() {
-        //        Pixel::RGB(idx, col) => {
-        //            v_smth[idx] = col;
-        //            num_pixels -= 1;
-        //        },
-        //        _ => ()
-        //    }
-        //}
+        while (num_pixels > 0) {
+            match receiver.recv().unwrap() {
+                Pixel::RGB(idx, col) => {
+                    v_smth[idx] = col;
+                    num_pixels -= 1;
+                },
+                _ => ()
+            }
+            if num_pixels % 1000 == 0 {
+                eprintln!("{} pixels remaining...", num_pixels);
+            }
+        }
         //{
         //    eprintln!("Finished sending tasks at {} ms", timer.ms());
         //    //tp.ocupancy();
@@ -269,7 +272,8 @@ pub fn render() {
     {
         let mut vec = arc_cols.lock().unwrap();
         for i in (0..vec.len()) {
-            vec[i].lock().unwrap().write_color(samples as f64);
+            //vec[i].lock().unwrap().write_color(samples as f64);
+            vec[i].write_color(samples as f64);
         }
     }
 

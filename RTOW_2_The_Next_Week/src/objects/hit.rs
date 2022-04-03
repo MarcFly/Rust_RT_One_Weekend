@@ -41,7 +41,7 @@ pub trait Hittable: Send + Sync {
     fn hit(&self, r: &ray, t_min: f64, t_max: f64, rec:&mut hit_record) -> bool;
     fn get_aabb(&self, time0: f64, time1: f64) -> (bool, aabb);
 
-    fn compare(&self, other: &Box<dyn Hittable>, axis: usize) -> bool {
+    fn compare(&self, other: Arc<dyn Hittable>, axis: usize) -> bool {
         let (check, box1) = self.get_aabb(0., 0.);
         let (check2, box2) = other.get_aabb(0., 0.);
 
@@ -49,13 +49,9 @@ pub trait Hittable: Send + Sync {
 
         box1.min.v[axis] < box2.min.v[axis]
     }
-
-    fn hit_debug(&self, r: &ray, t_min: f64, t_max: f64, rec:&mut hit_record) -> bool;
-
-    fn fill_list(&self, list: &mut Arc<Mutex<hittable_list>>);
 }
 
-pub fn compare_x(main: &Box<dyn Hittable>, other: &Box<dyn Hittable>) -> std::cmp::Ordering {
+pub fn compare_x(main: &Arc<dyn Hittable>, other: &Arc<dyn Hittable>) -> std::cmp::Ordering {
     let (check, box1) = main.get_aabb(0., 0.);
     let (check2, box2) = other.get_aabb(0., 0.);
 
@@ -65,7 +61,7 @@ pub fn compare_x(main: &Box<dyn Hittable>, other: &Box<dyn Hittable>) -> std::cm
     else { std::cmp::Ordering::Greater }
 }
 
-pub fn compare_y(main: &Box<dyn Hittable>, other: &Box<dyn Hittable>) -> std::cmp::Ordering {
+pub fn compare_y(main: &Arc<dyn Hittable>, other: &Arc<dyn Hittable>) -> std::cmp::Ordering {
     let (check, box1) = main.get_aabb(0., 0.);
     let (check2, box2) = other.get_aabb(0., 0.);
 
@@ -75,7 +71,7 @@ pub fn compare_y(main: &Box<dyn Hittable>, other: &Box<dyn Hittable>) -> std::cm
     else { std::cmp::Ordering::Greater }
 }
 
-pub fn compare_z(main: &Box<dyn Hittable>, other: &Box<dyn Hittable>) -> std::cmp::Ordering {
+pub fn compare_z(main: &Arc<dyn Hittable>, other: &Arc<dyn Hittable>) -> std::cmp::Ordering {
     let (check, box1) = main.get_aabb(0., 0.);
     let (check2, box2) = other.get_aabb(0., 0.);
 

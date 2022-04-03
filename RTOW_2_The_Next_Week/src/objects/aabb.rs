@@ -56,8 +56,9 @@ impl aabb {
         for i in 0..3 {
             // (1D_Point - Ray_Origin_At_same_dimension ) / Ray_Direction_At_same_direction = 1D_Point_where_ray_intersects_1D_Point
             // We take the minimum between 1D_min_AABB and 1D_max_AABB -> to make sure we can know we have a minimum for reference
-            let expected_min = (self.min.v[i] - r.origin.v[i]) / r.dir.v[i];
-            let expected_max = (self.max.v[i] - r.origin.v[i]) / r.dir.v[i];
+            let inv = 1. / r.dir.v[i];
+            let expected_min = (self.min.v[i] - r.origin.v[i]) * inv;
+            let expected_max = (self.max.v[i] - r.origin.v[i]) * inv;
             let t0_actual_min = expected_min.min(expected_max);
             let t1_actual_max = expected_max.max(expected_min);
 
@@ -79,17 +80,19 @@ impl aabb {
         let (mut calc_min, mut calc_max) = (t_min, t_max);
         for i in 0..3 {
             let inverse_dir = 1. / r.dir.v[i];
-            let mut t0 = self.min.v[i] - r.origin.v[i] * inverse_dir;
-            let mut t1 = self.max.v[i] - r.origin.v[i] * inverse_dir;
+            let mut t0 = (self.min.v[i] - r.origin.v[i]) * inverse_dir;
+            let mut t1 = (self.max.v[i] - r.origin.v[i]) * inverse_dir;
+            
             if inverse_dir < 0. {
                 let mid = t0;
                 t0 = t1;
                 t1 = mid;
             }
 
-            calc_min = if t0 > calc_min { t0 } else { calc_min };
-            calc_max = if t1 < calc_max { t1 } else { calc_max };
-            if t_max <= t_min {return false}
+            calc_min = t0.max(calc_min); //if t0 > calc_min { t0 } else { calc_min };
+            calc_max = t1.min(calc_max); //if t1 < calc_max { t1 } else { calc_max };
+            if calc_max <= calc_min {return false}
+            // tmax <= t_min
         } 
 
         true
@@ -110,15 +113,5 @@ impl Hittable for aabb {
 
     fn get_aabb(&self, time0: f64, time1: f64) -> (bool, aabb) {
         (true, aabb::from(self.min, self.max))
-    }
-
-    fn hit_debug(&self, r: &ray, t_min: f64, t_max: f64, rec:& mut hit_record) -> bool {
-        if !self.hit_fast(r, t_min, t_max) { return false };
-        rec.mat = Arc::clone(&self.mat);
-        true
-    }
-
-    fn fill_list(&self, list: &mut Arc<Mutex<hittable_list>>) {
-        list.lock().unwrap().obj_list.push(Arc::new(Box::new(aabb::from(self.min, self.max))));
     }
 }

@@ -108,39 +108,6 @@ impl Hittable for sphere {
             self.center + vec3::from(self.radius, self.radius, self.radius)
         ))
     }
-
-    fn hit_debug(&self, r: &ray, t_min: f64, t_max: f64, rec:& mut hit_record) -> bool {
-        let origin_center = r.origin - self.center;
-        let a = r.dir.length_squared();
-        let half_b = origin_center.dot(&r.dir);
-        let c = origin_center.dot(&origin_center) - self.radius*self.radius;
-        
-        let mut discriminant = half_b*half_b - a*c;
-        //discriminant = check_discriminant(discriminant, half_b, a);
-        if (discriminant < 0.) {return false}
-        
-        let sq_discr = discriminant.sqrt();
-        let mut root = (-half_b - sq_discr) / a;
-        if(root < t_min || root > t_max) {
-            root = (-half_b +sq_discr) / a;
-            if(root < t_min || t_max < root) {
-                return false
-            }
-        }
-
-        rec.t = root;
-        rec.p = r.at(rec.t);
-        rec.n = (rec.p - self.center) / self.radius; // This is bad, only returns normal pointing outwards
-        // What if we need to differentiate between from and back face!
-        rec.set_face_normal(r);
-        rec.mat = Arc::clone(&self.mat);
-
-        true
-    }   
-
-    fn fill_list(&self, list: &mut Arc<Mutex<hittable_list>>) {
-        //list.lock().unwrap().obj_list.push(Arc::new(Box::new(*self)));
-    }
 }
 
 use crate::rtow_math::defines;
@@ -248,38 +215,5 @@ impl Hittable for moving_sphere {
         );
 
         (true, aabb::from_2_aabb(time0_aabb, time1_aabb))
-    }
-
-    fn hit_debug(&self, r: &ray, t_min: f64, t_max: f64, rec:& mut hit_record) -> bool {
-        let origin_center = r.origin - self.center(r.time);
-        let a = r.dir.length_squared();
-        let half_b = origin_center.dot(&r.dir);
-        let c = origin_center.dot(&origin_center) - self.radius*self.radius;
-        
-        let mut discriminant = half_b*half_b - a*c;
-        //discriminant = check_discriminant(discriminant, half_b, a);
-        if (discriminant < 0.) {return false}
-        
-        let sq_discr = discriminant.sqrt();
-        let mut root = (-half_b - sq_discr) / a;
-        if(root < t_min || root > t_max) {
-            root = (-half_b +sq_discr) / a;
-            if(root < t_min || t_max < root) {
-                return false
-            }
-        }
-
-        rec.t = root;
-        rec.p = r.at(rec.t);
-        rec.n = (rec.p - self.center(r.time)) / self.radius; // This is bad, only returns normal pointing outwards
-        // What if we need to differentiate between from and back face!
-        rec.set_face_normal(r);
-        rec.mat = Arc::clone(&self.mat);
-
-        true
-    }  
-    
-    fn fill_list(&self, list: &mut Arc<Mutex<hittable_list>>) {
-        //list.lock().unwrap().obj_list.push(Arc::new(Box::new(*self)));
     }
 }
