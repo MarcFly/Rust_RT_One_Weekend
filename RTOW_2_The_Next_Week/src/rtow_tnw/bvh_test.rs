@@ -182,25 +182,25 @@ pub fn render() {
 
     println!("P3\n{} {}\n255\n", image_width, image_height);
     
-    let mut arc_cols: Arc<Mutex<Box<Vec<colorRGB>>>> = Arc::new(Mutex::new(Box::new(Vec::new()))); // VecPoint));
-    //let mut arc_cols: Arc<Mutex<Box<Vec<Arc<Mutex<colorRGB>>>>>> = Arc::new(Mutex::new(Box::new(Vec::new())));
+    //let mut arc_cols: Arc<Mutex<Box<Vec<colorRGB>>>> = Arc::new(Mutex::new(Box::new(Vec::new()))); // VecPoint));
+    let mut arc_cols: Arc<Mutex<Box<Vec<Arc<Mutex<colorRGB>>>>>> = Arc::new(Mutex::new(Box::new(Vec::new())));
     {
         let mut vec = arc_cols.lock().unwrap();
-        //for i in 0..image_width * image_height as usize {
-        //    vec.push(Arc::new(Mutex::new(colorRGB::new())));
-        //}
-        vec.resize(image_width * image_height as usize, colorRGB::new());
+        for i in 0..image_width * image_height as usize {
+            vec.push(Arc::new(Mutex::new(colorRGB::new())));
+        }
+        //vec.resize(image_width * image_height as usize, colorRGB::new());
     }
     eprintln!("Finished creating individual ArcMutexColorRGB at {} ms", timer.ms());
     //let num_thread = std::thread::available_parallelism().unwrap().get();
     //let mut sender: mpsc::Sender<Pixel>;
     //let mut receiver: mpsc::Receiver<Pixel>;
-    let (sender, receiver) = mpsc::channel();
+    //let (sender, receiver) = mpsc::channel();
 
     let arc_hit = Arc::new(hittables);
     let mut arc_iters: Arc<Mutex<Vec<i32>>> = Arc::new(Mutex::new(Vec::new()));
     {
-        let mut tp =  Runner::new(8);
+        let mut tp =  Runner::new(24);
         let mut v_smth = arc_cols.lock().unwrap();
         // Throw a ray at every pixel
         for i in (0..(image_height)).rev() {
@@ -214,8 +214,8 @@ pub fn render() {
                 
                 let light_arc = Arc::clone(&arc_lights);
 //
-                let sender_cpy = sender.clone();
-                //let curr_pixel = Arc::clone(&v_smth[idx]);
+                //let sender_cpy = sender.clone();
+                let curr_pixel = Arc::clone(&v_smth[idx]);
                 let clone_iters = Arc::clone(&arc_iters);
                 tp.add_task(move || {
                     let mut pixel = colorRGB::new();
@@ -233,27 +233,27 @@ pub fn render() {
                     //let r = cam.focus_ray(u, v);
                     //pixel = pixel + light_hits(&r, Arc::clone(&light_arc), Arc::clone(&hit_arc)) * (samples as f64);
 //
-                    sender_cpy.send(Pixel::RGB(idx, pixel));
-                    //pixel.write_col_to(curr_pixel, idx);
+                    //sender_cpy.send(Pixel::RGB(idx, pixel));
+                    pixel.write_col_to(curr_pixel, idx);
                 });
                 
             }
         }
 //
-        let mut num_pixels = image_width * image_height as usize;
-        //let mut vec = arc_cols.lock().unwrap();
-        while (num_pixels > 0) {
-            match receiver.recv().unwrap() {
-                Pixel::RGB(idx, col) => {
-                    v_smth[idx] = col;
-                    num_pixels -= 1;
-                },
-                _ => ()
-            }
-            if num_pixels % 1000 == 0 {
-                eprintln!("{} pixels remaining...", num_pixels);
-            }
-        }
+        //let mut num_pixels = image_width * image_height as usize;
+        ////let mut vec = arc_cols.lock().unwrap();
+        //while (num_pixels > 0) {
+        //    match receiver.recv().unwrap() {
+        //        Pixel::RGB(idx, col) => {
+        //            v_smth[idx] = col;
+        //            num_pixels -= 1;
+        //        },
+        //        _ => ()
+        //    }
+        //    //if num_pixels % 1000 == 0 {
+        //    //    eprintln!("{} pixels remaining...", num_pixels);
+        //    //}
+        //}
         //{
         //    eprintln!("Finished sending tasks at {} ms", timer.ms());
         //    //tp.ocupancy();
@@ -265,15 +265,15 @@ pub fn render() {
     let unwrapped_iter_vec = arc_iters.lock().unwrap();
     let total_iters: i32 = unwrapped_iter_vec.iter().sum();
     let avg_iters = total_iters / unwrapped_iter_vec.len() as i32;
-    eprintln!("Average steps per ray: {}", avg_iters);
+    //eprintln!("Average steps per ray: {}", avg_iters);
 
 
     eprintln!("Tasks finished running at {} ms", timer.ms());
     {
         let mut vec = arc_cols.lock().unwrap();
         for i in (0..vec.len()) {
-            //vec[i].lock().unwrap().write_color(samples as f64);
-            vec[i].write_color(samples as f64);
+            vec[i].lock().unwrap().write_color(samples as f64);
+            //vec[i].write_color(samples as f64);
         }
     }
 
