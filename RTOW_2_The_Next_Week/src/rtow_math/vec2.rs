@@ -4,7 +4,7 @@ use num;
 
 #[derive(Debug, Copy, Clone)]
 pub struct vec2 {
-    v: [f64; 2],
+    pub v: [f64; 2],
 }
 type vec2_scalar = vec2;
 

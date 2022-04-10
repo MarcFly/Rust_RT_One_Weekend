@@ -1,6 +1,7 @@
 use crate::taskrunner::*;
 use crate::threadpool::*;
 use std::sync::mpsc;
+use crate::materials::textures::*;
 
 use simple_stopwatch::Stopwatch;
 
@@ -105,7 +106,7 @@ pub fn shadow_rays() {
     let mut hittables: Vec<Box<dyn Hittable>> = Vec::new();
     let mut material_vec : Vec<Arc<dyn Material>> = Vec::new();
 
-    material_vec.push(Arc::new(lambertian{albedo: colorRGB::from(0.5,0.5,0.5)}));
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::from(0.5,0.5,0.5), tex: Arc::new(Solid_Color::new()),}));
     hittables.push(Box::new(sphere::from_mat(point3::from(0., -1000., 0.), 1000., Arc::clone(& material_vec[0]))));
     
     for i in (-11..11) {
@@ -115,33 +116,33 @@ pub fn shadow_rays() {
             if(center - point3::from(4.,0.2,0.)).length() > 0.9 {
                 if (mat_rng < 0.8) { // diffuse
                     let albedo = colorRGB::from(rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.));
-                    material_vec.push(Arc::new(lambertian{albedo}));
+                    material_vec.push(Arc::new(lambertian{albedo, tex: Arc::new(Solid_Color::new()),}));
                     let s = material_vec.len();
                     hittables.push(Box::new(sphere::from_mat(center, 0.2, material_vec[s-1].clone())));
                 } else if mat_rng < 0.95 { // metal
                     let albedo = colorRGB::from(rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.));
                     let fuzz = rand_f64_r(0., 0.5);
-                    material_vec.push(Arc::new(metal{albedo, fuzz}));
+                    material_vec.push(Arc::new(metal{albedo, fuzz, tex: Arc::new(Solid_Color::new()),}));
                     let s = material_vec.len();
                     hittables.push(Box::new(sphere::from_mat(center, 0.2, material_vec[s-1].clone())));
                 } else { // glass
                     let albedo = colorRGB::from(rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.), rand_f64_r(0.5, 1.));
                     let index_refr = rand_f64_r(1., 2.);
                     let alpha = rand_f64_r(0., 0.5);
-                    material_vec.push(Arc::new(dielectric{albedo, alpha, index_refr}));
+                    material_vec.push(Arc::new(dielectric{albedo, alpha, index_refr, tex: Arc::new(Solid_Color::new()),}));
                     let s = material_vec.len();
                     hittables.push(Box::new(sphere::from_mat(center, 0.2, material_vec[s-1].clone())));
                 }
             }
         }
     }
-    material_vec.push(Arc::new(dielectric{albedo: colorRGB::from(1., 1.,1.), alpha: 0., index_refr: 1.5}));
+    material_vec.push(Arc::new(dielectric{albedo: colorRGB::from(1., 1.,1.), alpha: 0., index_refr: 1.5, tex: Arc::new(Solid_Color::new()),}));
     hittables.push(Box::new(sphere::from_mat(point3::from(0., 1., 0.), 1., material_vec[material_vec.len()-1].clone())));
 
-    material_vec.push(Arc::new(metal{albedo: colorRGB::from(0.7, 0.6, 0.5), fuzz: 0.}));
+    material_vec.push(Arc::new(metal{albedo: colorRGB::from(0.7, 0.6, 0.5), fuzz: 0., tex: Arc::new(Solid_Color::new()),}));
     hittables.push(Box::new(sphere::from_mat(point3::from(4., 1., 0.), 1., material_vec[material_vec.len()-1].clone())));
 
-    material_vec.push(Arc::new(lambertian{albedo: colorRGB::from(0.7,0.6,0.5)}));
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::from(0.7,0.6,0.5), tex: Arc::new(Solid_Color::new()),}));
     hittables.push(Box::new(sphere::from_mat(point3::from(-4., 1., 0.), 1., material_vec[material_vec.len()-1].clone())));
 
     // Debug Lights

@@ -4,6 +4,7 @@ use crate::materials::Material;
 use crate::materials::Default;
 use crate::objects::hit::*;
 use crate::objects::aabb::*;
+use crate::rtow_math::vec2::*;
 
 /// Knowing that a point is outside a sphere if x^2 + y^2 + z^2 > Radius^2
 /// Assuming sphere is at origin, else we just transalate point by center and calculate again
@@ -50,6 +51,7 @@ fn check_discriminant(discriminant: f64, b: f64, a: f64) -> f64 {
     }
 }
 
+use std::f64::consts::PI;
 use std::sync::Arc;
 pub struct sphere {
     pub center: point3,
@@ -64,6 +66,21 @@ impl sphere {
     //pub fn from(p: point3, r: f64) -> sphere { sphere{center: p, radius: r, mat: Arc::new(def_material)}}
     pub fn from_mat(p: point3, r: f64, mat_p: Arc::<dyn Material>) -> sphere {
         sphere { center: p, radius: r, mat: mat_p}
+    }
+
+    fn get_uv(&self, hit_pos: &point3, uv: &mut point2) {
+        // p: a given point on the sphere of radius one, centered at the origin.
+        // u: returned value [0,1] of angle around the Y axis from X=-1.
+        // v: returned value [0,1] of angle from Y=-1 to Y=+1.
+        //     <1 0 0> yields <0.50 0.50>       <-1  0  0> yields <0.00 0.50>
+        //     <0 1 0> yields <0.50 1.00>       < 0 -1  0> yields <0.50 0.00>
+        //     <0 0 1> yields <0.25 0.50>       < 0  0 -1> yields <0.75 0.50>
+        
+        let theta = (-hit_pos.y()).acos();
+        let phi = (-hit_pos.z()).atan2(*hit_pos.x()) + PI;
+        
+        uv.v[0] = phi / (2.*PI);
+        uv.v[1] = theta / PI;
     }
 }
 
@@ -98,6 +115,7 @@ impl Hittable for sphere {
         // What if we need to differentiate between from and back face!
         rec.set_face_normal(r);
         rec.mat = Arc::clone(&self.mat);
+        self.get_uv(&rec.p, &mut rec.uv);
 
         true
     }   

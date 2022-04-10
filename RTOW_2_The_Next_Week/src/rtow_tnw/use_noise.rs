@@ -58,7 +58,7 @@ fn ray_hits(r: &ray, obj: Arc<hittable_list>, depth_: i32, debug_iter_vec: Arc<M
         let mut scattered = ray::new();
         //let mut attenuation = colorRGB::new();
         unsafe{
-        if(Material::scatter(&*rec.mat, r, &rec, &mut attenuation, &mut scattered)){
+        if(Material::scatter_tex(&*rec.mat, r, &rec, &mut attenuation, &mut scattered)){
             debug_iter_vec.lock().unwrap().push(rec.iters);
             return ray_hits(&scattered, obj, next_depth, Arc::clone(&debug_iter_vec)) * attenuation;
         }
@@ -81,7 +81,7 @@ use crate::rtow_tnw::*;
 pub fn render() {
     let mut timer = Stopwatch::start_new();
 
-    let (cam, image_width, image_height) = base_cam();
+    let (cam, image_width, image_height) = cam_scene2();
     let (iw_f64, ih_f64) = (image_width as f64, image_height as f64);
     // SETUP Lights for direct shadow rays
 
@@ -90,7 +90,7 @@ pub fn render() {
 
     // SETUP Objects and materials 
     
-    let (mut hittables, mut material_vec) = setup_objects();
+    let (mut hittables, mut material_vec) = obj_scene3();
 
     println!("P3\n{} {}\n255\n", image_width, image_height);
     
@@ -136,8 +136,8 @@ pub fn render() {
                             let v = (i as f64 + rand_f64()) / (ih_f64 - 1.);
                             let r = cam.focus_time_ray(u, v);
                             let ambient_indirect = ray_hits(&r, Arc::clone(&hit_arc), depth, Arc::clone(&clone_iters));
-                            let lights_direct = light_hits(&r, Arc::clone(&light_arc), Arc::clone(&hit_arc));
-                            pixel = pixel + ambient_indirect + lights_direct;
+                            //let lights_direct = light_hits(&r, Arc::clone(&light_arc), Arc::clone(&hit_arc));
+                            pixel = pixel + ambient_indirect;// + lights_direct;
                         }                   
                         pixel.write_col_to(curr_pixel, 0);
                     });

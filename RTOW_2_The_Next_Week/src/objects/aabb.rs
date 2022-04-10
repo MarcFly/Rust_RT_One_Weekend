@@ -16,6 +16,8 @@ pub fn hit_aabb(min: point3, max: point3, ray: &ray) -> f64 {
 } 
 
 use crate::materials::*;
+use crate::materials::textures::*;
+
 pub struct aabb {
     pub min: point3,
     pub max: point3,
@@ -30,13 +32,16 @@ impl aabb {
             mat: Arc::new(dielectric{
                 albedo: colorRGB::from(1.,0.,0.), 
                 alpha: 0.1, 
-                index_refr: 0.})
+                index_refr: 0.,
+                tex: Arc::new(Solid_Color::new()),
+            })
         }
     }
     pub fn from(min: point3, max: point3) -> aabb { aabb{min,max, mat: Arc::new(dielectric{
         albedo: colorRGB::from(1.,0.,0.), 
         alpha: 0.1, 
-        index_refr: 0.
+        index_refr: 0.,
+        tex: Arc::new(Solid_Color::new()),
     })} }
 
     pub fn from_2_aabb(b1: aabb, b2: aabb) -> aabb {

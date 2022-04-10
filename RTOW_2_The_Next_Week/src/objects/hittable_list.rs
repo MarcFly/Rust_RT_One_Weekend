@@ -85,6 +85,7 @@ struct bvh_node {
 
 use crate::objects::hit::*;
 use crate::rtow_math::vec3::*;
+use crate::materials::textures::*;
 
 impl bvh_node {
     pub fn new_empty() -> bvh_node {
@@ -95,7 +96,8 @@ impl bvh_node {
             mat: Arc::new(dielectric{
                 albedo: colorRGB::from(1.,0.,0.), 
                 alpha: 0.1, 
-                index_refr: 0.
+                index_refr: 0.,
+                tex: Arc::new(Solid_Color::new()),
             })
         }
     }

@@ -3,6 +3,7 @@ use crate::rtow_math::vec3::*;
 use crate::objects::sphere::*;
 use crate::materials::*;
 use crate::objects::aabb::*;
+use crate::rtow_math::vec2::*;
 
 use std::sync::Arc;
 
@@ -14,6 +15,7 @@ pub struct hit_record {
     pub front_face: bool,
     pub mat: Arc<dyn Material>,
     pub iters: i32,
+    pub uv: point2,
 }
 
 impl hit_record {
@@ -26,6 +28,7 @@ impl hit_record {
                 front_face: true,
                 mat: Arc::new(new_def),
                 iters: 0,
+                uv: point2::new(),
             }
         }
     
@@ -49,6 +52,8 @@ pub trait Hittable: Send + Sync {
 
         box1.min.v[axis] < box2.min.v[axis]
     }
+
+    //fn get_uv(&self, hit_pos: &point3, uv: &mut point2);
 }
 
 pub fn compare_x(main: &Arc<dyn Hittable>, other: &Arc<dyn Hittable>) -> std::cmp::Ordering {
