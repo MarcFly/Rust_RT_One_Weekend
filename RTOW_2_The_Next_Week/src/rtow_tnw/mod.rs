@@ -2,6 +2,7 @@ pub mod motion_blur;
 pub mod bvh_test;
 pub mod use_textures;
 pub mod use_noise;
+pub mod rayon_test;
 
 use crate::taskrunner::*;
 use crate::threadpool::*;
@@ -28,8 +29,8 @@ use crate::rtow_math::{
 use crate::materials::*;
 use std::sync::*;
 
-static samples: i32 = 20;
-static depth: i32 = 5;
+static samples: i32 = 100;
+static depth: i32 = 10;
 
 pub fn base_cam() -> (camera, i32, i32) {
     let aspect_ratio = 16. / 9.;

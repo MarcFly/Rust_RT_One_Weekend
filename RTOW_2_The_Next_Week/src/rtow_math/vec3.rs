@@ -164,8 +164,9 @@ impl vec3 {
         let mut check = true;
         let mut pix = pixel.lock().unwrap();
         *pix = colorRGB::from_vec(*self);
-
     }
+
+
 
     pub fn clamp(&mut self, min: f64, max:f64) {
         if self.v[0] < min {self.v[0] = min};
@@ -180,3 +181,22 @@ impl vec3 {
 
 
 unsafe impl Send for vec3 {}
+
+pub struct Par_Pixel {
+    pub color: colorRGB,
+    pub i: i32,
+    pub j: i32,
+}
+
+unsafe impl Send for Par_Pixel {}
+
+use rayon::prelude::*;
+
+//impl<T: Send> FromParallelITerator<T> for Vec<Par_Pixel> {
+//    fn from_par_iter<I>(par_iter: I) -> Self
+//        where I: IntoParallelIterator<Item=T>
+//        {
+//            let par_iter = par_iter.into_par_iter();
+//
+//        }
+//}
