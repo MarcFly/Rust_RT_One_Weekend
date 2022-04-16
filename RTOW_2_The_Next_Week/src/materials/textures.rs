@@ -135,10 +135,120 @@ impl Perlin_Noise {
             vals[target] = tmp;
         }
     }
+
+    // Filtered Noises
+
+    pub fn lerp_noise(&self, p: &point3) -> f64 {
+        let _val =  p.v[rand_i8_r(0, 3) as usize];
+        let u = _val - _val.floor();
+
+        let i = (p.x().floor()) as usize;
+        let j = (p.y().floor()) as usize;
+        let k = (p.z().floor()) as usize;
+
+        let vals = [
+            self.ranfloats[self.x_ind[i & 255]],
+            self.ranfloats[self.x_ind[((i as i32 + 1) & 255) as usize]]
+        ];
+        f64_lerp(vals, u)
+    }
+
+    pub fn trilerp_noise(&self, p: &point3) -> f64 {
+        let u = p.v[0] - p.v[0].floor();
+        let v = p.v[1] - p.v[1].floor();
+        let w = p.v[2] - p.v[2].floor();
+        
+        let i = (p.x().floor()) as i32;
+        let j = (p.y().floor()) as i32;
+        let k = (p.z().floor()) as i32;
+
+        let mut vals : [f64; 2*2*2] = [0.; 2*2*2];
+        for it1 in 0..2 {
+            let ind_1 = ((i + it1 as i32) & 255) as usize;
+
+            for it2 in 0..2 {
+                let ind_2 = ((j + it2 as i32) & 255) as usize;
+
+                for it3 in 0..2 {
+                    let ind_3 = ((k + it3 as i32) & 255) as usize;
+
+                    vals[it1*2*2 + it2*2 + it3] = self.ranfloats[self.x_ind[ind_1] ^ self.y_ind[ind_2] ^ self.z_ind[ind_3]];
+                }
+            }
+        };
+
+        f64_trilerp(vals, [u, v, w])
+    }
+
+    pub fn trilerp_and_hermit_cubic_noise(&self, p: &point3) -> f64 {
+        let mut u = p.v[0] - p.v[0].floor();
+        let mut v = p.v[1] - p.v[1].floor();
+        let mut w = p.v[2] - p.v[2].floor();
+        
+        // Apply 3rd hermit cubic to uvw
+        u = u*u*(3.-2.*u);
+        v = v*v*(3.-2.*v);
+        w = w*w*(3.-2.*w);
+
+
+        let i = (p.x().floor()) as i32;
+        let j = (p.y().floor()) as i32;
+        let k = (p.z().floor()) as i32;
+
+        let mut vals : [f64; 2*2*2] = [0.; 2*2*2];
+        for it1 in 0..2 {
+            let ind_1 = ((i + it1 as i32) & 255) as usize;
+
+            for it2 in 0..2 {
+                let ind_2 = ((j + it2 as i32) & 255) as usize;
+
+                for it3 in 0..2 {
+                    let ind_3 = ((k + it3 as i32) & 255) as usize;
+
+                    vals[it1*2*2 + it2*2 + it3] = self.ranfloats[self.x_ind[ind_1] ^ self.y_ind[ind_2] ^ self.z_ind[ind_3]];
+                }
+            }
+        };
+
+        f64_trilerp(vals, [u, v, w])
+    }
 }
+
 
 impl Texture for Perlin_Noise {
     fn value(&self, u: f64, v: f64, p: &point3) -> colorRGB {
-        colorRGB::from(1.,1.,1.) * self.noise(p)
+        colorRGB::from(1.,1.,1.) * 
+            //self.noise(p)
+            //self.lerp_noise(p)
+            //self.trilerp_noise(p)
+            self.trilerp_and_hermit_cubic_noise(p)
     }
+}
+
+/// Linear Interpolations
+
+pub fn f64_lerp(v: [f64; 2], t:f64) -> f64 {
+     v[0] + ((v[1] - v[0]) * t)
+}
+
+pub fn f64_trilerp(v: [f64; 2*2*2], t: [f64; 3]) -> f64 {
+    let mut accum = 0.;
+    for i in 0..2 {
+        let f_i = i as f64;
+        
+        for j in 0..2 {
+            let f_j = j as f64;
+            
+            for k in 0..2 {
+                let f_k = k as f64;
+                accum += 
+                    ((f_i*t[0] + (1.-f_i)*(1.-t[0])) *
+                    (f_j*t[1] + (1.-f_j)*(1.-t[1])) *
+                    (f_k*t[2] + (1.-f_k)*(1.-t[2])) *
+                    v[i*2*2 +j*2 + k] );
+            }
+        }
+    };
+
+    accum
 }
