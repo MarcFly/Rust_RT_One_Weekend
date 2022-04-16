@@ -29,8 +29,8 @@ use crate::rtow_math::{
 use crate::materials::*;
 use std::sync::*;
 
-static samples: i32 = 100;
-static depth: i32 = 10;
+static samples: i32 = 20;
+static depth: i32 = 5;
 
 pub fn base_cam() -> (camera, i32, i32) {
     let aspect_ratio = 16. / 9.;
@@ -172,10 +172,10 @@ pub fn obj_scene3() -> (hittable_list, Vec<Arc<dyn Material>>) {
 
     let mut material_vec : Vec<Arc<dyn Material>> = Vec::new();
 
-    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(Tile_Noise::new(10)),}));
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(Perlin_Noise::new()),}));
     hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(0., -1000., 0.), 1000., Arc::clone(& material_vec[0]))));
 
-    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(Tile_Noise::new(10)),}));
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(Perlin_Noise::new()),}));
     hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(0., 2., 0.), 2., Arc::clone(& material_vec[1]))));
     
     hittables.construct_bvh(0., 1.);
