@@ -77,23 +77,34 @@ pub struct Perlin_Noise {
     x_ind: [usize; 256],
     y_ind: [usize; 256],
     z_ind: [usize; 256],
+    scale: f64,
+    ranvecs: [vec3; 256],
 }
 
 use rand::Rng;
 
 impl Perlin_Noise {
     pub fn new() ->  Perlin_Noise {
+        Perlin_Noise::new_scaled(1.)
+    }
+
+    pub fn new_scaled(s: f64) -> Perlin_Noise {
         let mut ranfloats: [f64; 256] = [0.; 256];
+        let mut ranvecs: [vec3; 256] = [vec3::new(); 256];
         for i in 0..256 {
             ranfloats[i]  = rand_f64();
+            ranvecs[i] = vec3::new_rand(-1.,1.);
         }
-        
+
         Perlin_Noise{
             ranfloats,
             x_ind: Perlin_Noise::perlin_gen_permutation(),
             y_ind: Perlin_Noise::perlin_gen_permutation(),
             z_ind: Perlin_Noise::perlin_gen_permutation(),
+            scale: s,
+            ranvecs,
         }
+
     }
 
     pub fn noise(&self, p: &point3) -> f64 {
@@ -107,6 +118,33 @@ impl Perlin_Noise {
         self.ranfloats[self.x_ind[i] ^ self.y_ind[j] ^ self.z_ind[k]]
     }
 
+    pub fn noise_vecs(&self, p: &point3) -> f64 {
+        let u = p.v[0] - p.v[0].floor();
+        let v = p.v[1] - p.v[1].floor();
+        let w = p.v[2] - p.v[2].floor();
+        
+        let i = (p.x().floor()) as i32;
+        let j = (p.y().floor()) as i32;
+        let k = (p.z().floor()) as i32;
+
+        let mut vals : [vec3; 2*2*2] = [vec3::new(); 2*2*2];
+        for it1 in 0..2 {
+            let ind_1 = ((i + it1 as i32) & 255) as usize;
+
+            for it2 in 0..2 {
+                let ind_2 = ((j + it2 as i32) & 255) as usize;
+
+                for it3 in 0..2 {
+                    let ind_3 = ((k + it3 as i32) & 255) as usize;
+
+                    vals[it1*2*2 + it2*2 + it3] = self.ranvecs[self.x_ind[ind_1] ^ self.y_ind[ind_2] ^ self.z_ind[ind_3]];
+                }
+            }
+        };
+
+        vec3_trilerp(vals, [u, v, w])
+    }
+
     pub fn tile_noise(&self, p: &point3) -> f64 {
         let i = ((4.*p.x()) as i32 & 255) as usize;
         let j = ((4.*p.y()) as i32 & 255) as usize;
@@ -115,6 +153,20 @@ impl Perlin_Noise {
         self.ranfloats[i ^ j ^ k]
     }
 
+
+    pub fn turbulent_noise(&self, p: &point3, depth: i32) -> f64 {
+        let mut accum = 0.;
+        let mut temp_p = *p;
+        let mut weight = 1.;
+
+        for i in 0..depth {
+            accum += weight*self.noise_vecs(&temp_p);
+            weight *= 0.5;
+            temp_p = temp_p * 2.;
+        }
+
+        accum.abs()
+    }
     // Private Funs
     
     fn perlin_gen_permutation() -> [usize; 256] {
@@ -186,9 +238,6 @@ impl Perlin_Noise {
         let mut w = p.v[2] - p.v[2].floor();
         
         // Apply 3rd hermit cubic to uvw
-        u = u*u*(3.-2.*u);
-        v = v*v*(3.-2.*v);
-        w = w*w*(3.-2.*w);
 
 
         let i = (p.x().floor()) as i32;
@@ -217,11 +266,15 @@ impl Perlin_Noise {
 
 impl Texture for Perlin_Noise {
     fn value(&self, u: f64, v: f64, p: &point3) -> colorRGB {
+        let scaled_p = *p * self.scale;
         colorRGB::from(1.,1.,1.) * 
             //self.noise(p)
             //self.lerp_noise(p)
             //self.trilerp_noise(p)
-            self.trilerp_and_hermit_cubic_noise(p)
+            //self.trilerp_and_hermit_cubic_noise(&scaled_p)
+            //self.noise_vecs(&scaled_p)
+            //self.turbulent_noise(&scaled_p, 7)
+            (0.5 * (1. + (self.scale*p.v[2] + self.turbulent_noise(p, 7)*10.)).sin())
     }
 }
 
@@ -246,6 +299,35 @@ pub fn f64_trilerp(v: [f64; 2*2*2], t: [f64; 3]) -> f64 {
                     (f_j*t[1] + (1.-f_j)*(1.-t[1])) *
                     (f_k*t[2] + (1.-f_k)*(1.-t[2])) *
                     v[i*2*2 +j*2 + k] );
+            }
+        }
+    };
+
+    accum
+}
+
+pub fn vec3_trilerp(v: [vec3; 2*2*2], t: [f64; 3]) -> f64 {
+    let uu = t[0]*t[0]*(3.-2.*t[0]);
+    let vv = t[1]*t[1]*(3.-2.*t[1]);
+    let ww = t[2]*t[2]*(3.-2.*t[2]);
+    
+    let mut accum = 0.;
+
+
+    for i in 0..2 {
+        let f_i = i as f64;
+        
+        for j in 0..2 {
+            let f_j = j as f64;
+            
+            for k in 0..2 {
+                let f_k = k as f64;
+                let weight = vec3::from(t[0]-f_i, t[1]-f_j, t[2]-f_k);
+                accum += 
+                    ((f_i*t[0] + (1.-f_i)*(1.-t[0])) *
+                    (f_j*t[1] + (1.-f_j)*(1.-t[1])) *
+                    (f_k*t[2] + (1.-f_k)*(1.-t[2])) *
+                    v[i*2*2 +j*2 + k].dot(&weight) );
             }
         }
     };

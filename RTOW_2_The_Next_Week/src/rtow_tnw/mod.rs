@@ -172,10 +172,10 @@ pub fn obj_scene3() -> (hittable_list, Vec<Arc<dyn Material>>) {
 
     let mut material_vec : Vec<Arc<dyn Material>> = Vec::new();
 
-    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(Perlin_Noise::new()),}));
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(Perlin_Noise::new_scaled(2.)),}));
     hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(0., -1000., 0.), 1000., Arc::clone(& material_vec[0]))));
 
-    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(Perlin_Noise::new()),}));
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(Perlin_Noise::new_scaled(5.)),}));
     hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(0., 2., 0.), 2., Arc::clone(& material_vec[1]))));
     
     hittables.construct_bvh(0., 1.);

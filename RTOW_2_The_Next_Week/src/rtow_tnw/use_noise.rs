@@ -113,7 +113,7 @@ pub fn render() {
     let mut arc_iters: Arc<Mutex<Vec<i32>>> = Arc::new(Mutex::new(Vec::new()));
 
     {
-        let mut tp = Runner::new(8);
+        let mut tp = Runner::new(4);
         let mut v_smth = arc_cols.lock().unwrap();
 
         let mut i = image_height;
