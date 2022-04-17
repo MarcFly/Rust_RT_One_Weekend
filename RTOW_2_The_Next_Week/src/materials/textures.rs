@@ -334,3 +334,27 @@ pub fn vec3_trilerp(v: [vec3; 2*2*2], t: [f64; 3]) -> f64 {
 
     accum
 }
+
+// Image Texture
+
+use std::fs;
+use stb_image::image;
+
+pub struct RTOW_Image<T> {
+    image: image::Image<T>,
+}
+
+impl<T> RTOW_Image<T> {
+    pub fn load(path: &String) -> RTOW_Image<T> {
+        let image = match image::load(path) {
+            image::LoadResult::Error(e) => panic!("Failed to load: {}", e),
+            image::LoadResult::ImageU8(img) => {
+                img
+            },
+            image::LoadResult::ImageF32(img) => {
+                img
+            },
+
+        };
+    }
+}
