@@ -4,6 +4,8 @@ pub mod use_textures;
 pub mod use_noise;
 pub mod rayon_test;
 
+pub mod texture_map;
+
 use crate::taskrunner::*;
 use crate::threadpool::*;
 use std::sync::mpsc;
@@ -180,5 +182,17 @@ pub fn obj_scene3() -> (hittable_list, Vec<Arc<dyn Material>>) {
     
     hittables.construct_bvh(0., 1.);
 
+    (hittables, material_vec)
+}
+
+pub fn obj_scene4_earth() -> (hittable_list, Vec<Arc<dyn Material>>) {
+    let mut hittables: hittable_list = hittable_list::new();
+
+    let mut material_vec : Vec<Arc<dyn Material>> = Vec::new();
+    let path = String::from("earthmap.jpg");
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(RTOW_Image::load(&path)),}));
+    hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(0., 0., 0.), 1., Arc::clone(&material_vec[0]))));
+    hittables.construct_bvh(0., 1.);
+    
     (hittables, material_vec)
 }

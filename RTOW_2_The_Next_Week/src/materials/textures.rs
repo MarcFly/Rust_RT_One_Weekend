@@ -340,21 +340,52 @@ pub fn vec3_trilerp(v: [vec3; 2*2*2], t: [f64; 3]) -> f64 {
 use std::fs;
 use stb_image::image;
 
-pub struct RTOW_Image<T> {
-    image: image::Image<T>,
+pub struct RTOW_Image {
+    image: image::LoadResult,
 }
 
-impl<T> RTOW_Image<T> {
-    pub fn load(path: &String) -> RTOW_Image<T> {
-        let image = match image::load(path) {
+impl RTOW_Image {
+    pub fn load(path: &String) -> RTOW_Image {
+        match image::load(path) {
             image::LoadResult::Error(e) => panic!("Failed to load: {}", e),
-            image::LoadResult::ImageU8(img) => {
-                img
-            },
-            image::LoadResult::ImageF32(img) => {
-                img
-            },
+            (img) => {
+                RTOW_Image{image:img}
+            }
+        }
+    }
+}
 
-        };
+impl Texture for RTOW_Image {
+    fn value(&self, u: f64, v: f64, p: &point3) -> colorRGB {
+        let mut ret = colorRGB::from(0.,1.,1.);
+        match &self.image {
+            image::LoadResult::ImageF32(img) => {
+                panic!("Not Supported for now");
+            },
+            image::LoadResult::ImageU8(img) => {
+                let clamped_u = u.clamp(0.,1.);
+                let clamped_v = 1. - v.clamp(0.,1.);
+                // Flipped V because we render from bottom to top
+
+                let f64_w = img.width as f64;
+                let f64_h = img.height as f64;
+                let t_i = (clamped_u * f64_w);
+                let t_j = (clamped_v * f64_h);
+
+                let i = if t_i >= f64_w {(f64_w - 1.) as i32} else {t_i as i32};
+                let j = if t_j >= f64_h {(f64_h - 1.) as i32} else {t_j as i32};
+
+                let color_scale = 1./255.;
+                let v1 = (i*3 + j*3*img.width as i32) as usize;
+                colorRGB::from(
+                    img.data[v1] as f64 * color_scale, 
+                    img.data[v1+1] as f64 * color_scale, 
+                    img.data[v1+2] as f64 * color_scale, 
+                )
+
+            },
+            (_) => panic!("An error passed through the load!"),
+        }
+
     }
 }
