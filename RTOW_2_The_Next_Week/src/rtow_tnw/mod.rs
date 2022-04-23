@@ -5,7 +5,9 @@ pub mod use_noise;
 pub mod rayon_test;
 
 pub mod texture_map;
+pub mod use_emissive;
 
+use crate::materials::emissive::Diffuse_Emissive;
 use crate::taskrunner::*;
 use crate::threadpool::*;
 use std::sync::mpsc;
@@ -19,6 +21,7 @@ use crate::objects::{
     sphere::*,
     lights::*,
     hittable_list::*,
+    rectangles::*,
 };
 
 use crate::rtow_math::{
@@ -31,8 +34,8 @@ use crate::rtow_math::{
 use crate::materials::*;
 use std::sync::*;
 
-static samples: i32 = 20;
-static depth: i32 = 5;
+static samples: i32 = 200;
+static depth: i32 = 20;
 
 pub fn base_cam() -> (camera, i32, i32) {
     let aspect_ratio = 16. / 9.;
@@ -193,6 +196,58 @@ pub fn obj_scene4_earth() -> (hittable_list, Vec<Arc<dyn Material>>) {
     material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(RTOW_Image::load(&path)),}));
     hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(0., 0., 0.), 1., Arc::clone(&material_vec[0]))));
     hittables.construct_bvh(0., 1.);
+
+    (hittables, material_vec)
+}
+
+pub fn cam_scene5_emissive() -> (camera, i32, i32) {
+    let aspect_ratio = 16. / 9.;
+    let image_width = 600;
+    let image_height = (image_width as f64 / aspect_ratio) as i32;
+    let iw_f64 = image_width as f64;
+    let ih_f64 = image_height as f64;
+    let focal_length = 1.;
     
+    let og = point3::from(26.,3.,6.);
+    let lookat = point3::from(0.,2.,0.);
+    let vup = vec3::from(0., 2.,0.);
+    let focus_dist = (og - lookat).length();
+    let aperture = 0.;
+    (
+        camera::from_all(og, lookat, vup, 20., aspect_ratio, aperture, focus_dist, 0., 1.),
+        image_width,
+        image_height,
+    )
+}
+
+pub fn obj_scene5_emissive() -> (hittable_list, Vec<Arc<dyn Material>>) {
+    let mut hittables: hittable_list = hittable_list::new();
+
+    let mut material_vec : Vec<Arc<dyn Material>> = Vec::new();
+
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(Solid_Color::from(0.1, 1., 0.2)),}));
+    hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(0., -1000., 0.), 1000., Arc::clone(& material_vec[0]))));
+
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(Perlin_Noise::new_scaled(5.)),}));
+    hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(0., 2., 0.), 2., Arc::clone(& material_vec[1]))));
+    
+    material_vec.push(Arc::new(Diffuse_Emissive{albedo: colorRGB::from(1.,1.,1.), tex: Arc::new(Solid_Color::from(1.,1., 1.))}));
+    hittables.obj_list.push(Arc::new(xy_rect::from(3., 5., 1., 3., -4., Arc::clone(&material_vec[2]))));
+
+    let path = String::from("earthmap.jpg");
+    material_vec.push(Arc::new(Diffuse_Emissive{albedo: colorRGB::from(1.,1.,1.), tex: Arc::new(RTOW_Image::load(&path))}));
+    hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(0., 6., 0.), 1., Arc::clone(& material_vec[3]))));
+
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::from(1.,1.,1.), tex: Arc::new(RTOW_Image::load(&path))}));
+    hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(0., 5., -3.), 1., Arc::clone(& material_vec[4]))));
+
+    //material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(RTOW_Image::load(&path)),}));
+    hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(-1., 1., 3.), 1., Arc::clone(& material_vec[4]))));
+
+    hittables.obj_list.push(Arc::new(xy_rect::from(3., 5., 2., 4., -2., Arc::clone(&material_vec[4]))));
+
+
+    hittables.construct_bvh(0., 1.);
+
     (hittables, material_vec)
 }

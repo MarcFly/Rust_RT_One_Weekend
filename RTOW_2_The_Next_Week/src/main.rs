@@ -31,7 +31,11 @@ fn rtow_tnw_fns() {
     //bvh_test::render();
     //use_textures::render();
     //use_noise::render();
-    texture_map::render();
+    //texture_map::render();
+    
+    use_emissive::render();
+    
+    
     //rayon_test::render();
     //ayon_test::render_no_rayon();
 }

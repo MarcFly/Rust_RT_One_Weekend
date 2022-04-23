@@ -1,5 +1,5 @@
 pub mod textures;
-
+pub mod emissive;
 // ----------------
 
 use crate::rtow_math::{
@@ -21,6 +21,8 @@ pub trait Material {
     fn scatter(&self, r: &ray, rec: &hit_record, attenuation: &mut colorRGB, scatter: &mut ray) -> bool;
 
     fn scatter_tex(&self, r: &ray, rec: &hit_record, attenuation: &mut colorRGB, scatter: &mut ray) -> bool;
+
+    fn emitted(&self, u: f64, v: f64, p: &point3) -> colorRGB;
 }
 
 pub struct Default {}
@@ -33,6 +35,10 @@ impl Material for Default {
 
     fn scatter_tex(&self, r: &ray, rec: &hit_record, attenuation: &mut colorRGB, scatter: &mut ray) -> bool {
         false
+    }
+
+    fn emitted(&self, u: f64, v: f64, p: &point3) -> colorRGB {
+        colorRGB::new()
     }
 }
 
@@ -66,6 +72,10 @@ impl Material for lambertian {
         true
     }
 
+    fn emitted(&self, u: f64, v: f64, p: &point3) -> colorRGB {
+        colorRGB::new()
+    }
+
 }
 
 /// Metal Materials
@@ -94,6 +104,10 @@ impl Material for metal {
         *attenuation = self.tex.value(rec.uv.v[0], rec.uv.v[1], &rec.p);
         
         (scatter.dir.dot(&rec.n) > 0.)
+    }
+
+    fn emitted(&self, u: f64, v: f64, p: &point3) -> colorRGB {
+        colorRGB::new()
     }
     
 }
@@ -162,5 +176,9 @@ impl Material for dielectric {
 
         *scatter = ray::from_t(rec.p, refracted, r.time);
         true
+    }
+
+    fn emitted(&self, u: f64, v: f64, p: &point3) -> colorRGB {
+        colorRGB::new()
     }
 }

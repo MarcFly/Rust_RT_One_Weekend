@@ -42,34 +42,34 @@ fn light_hits(r: &ray, lights: Arc<Vec<light>>, obj: Arc<hittable_list>) -> colo
     color
 }
 
-fn ray_hits(r: &ray, obj: Arc<hittable_list>, depth_: i32, debug_iter_vec: Arc<Mutex<Vec<i32>>>) ->  colorRGB {
+fn ray_hits(r: &ray, obj: Arc<hittable_list>, depth_: i32, debug_iter_vec: Arc<Mutex<Vec<i32>>>, bg_col: colorRGB) ->  colorRGB {
     if(depth_ < 1) {return colorRGB::new()}
 
     let next_depth = depth_ -1;
     
     let mut rec = hit_record::new();
-    
-    // From Antialiasing
-    // Made recursive, with depth limit now
-    // Will start generating rays around in random_in_sphere
-    // Setting t_min at 0.001 increases light MASSIVELY, why?
     let mut attenuation = colorRGB::new();
-    if obj.hit_bvh(0.0001, std::f64::INFINITY, &mut rec, r) {
-        let mut scattered = ray::new();
-        //let mut attenuation = colorRGB::new();     
-        unsafe{
-        if(Material::scatter_tex(&*rec.mat, r, &rec, &mut attenuation, &mut scattered)){
+
+    if !obj.hit_bvh(0.0001, std::f64::INFINITY, &mut rec, r) {
+        debug_iter_vec.lock().unwrap().push(rec.iters);
+        return bg_col;
+    }
+    if rec.uv.v[0].is_nan() || rec.uv.v[1].is_nan() {
+        let mut test = false;
+        test = true;
+    }
+    let mut scattered = ray::new();
+    let emitted = rec.mat.emitted(rec.uv.v[0], rec.uv.v[1], &rec.p);
+
+        //let mut attenuation = colorRGB::new();
+    unsafe{
+        if(!Material::scatter_tex(&*rec.mat, r, &rec, &mut attenuation, &mut scattered)){
             debug_iter_vec.lock().unwrap().push(rec.iters);
-            return ray_hits(&scattered, obj, next_depth, Arc::clone(&debug_iter_vec)) * attenuation;
+            return emitted;
         }
     }
-        debug_iter_vec.lock().unwrap().push(rec.iters);
-        return colorRGB::from(0.5,0.5,0.5);
-    }
     debug_iter_vec.lock().unwrap().push(rec.iters);
-    let unit_dir = r.dir.unit_vec();
-    let t = 0.5 * (unit_dir.y() + 1.0);
-    colorRGB::from(1.,1.,1.)*(1.0 - t) + colorRGB::from(0.5, 0.7, 1.0) * t
+    emitted + ray_hits(&scattered, obj, next_depth, Arc::clone(&debug_iter_vec), bg_col) * attenuation
 }
 
 enum Pixel {
@@ -81,7 +81,7 @@ use crate::rtow_tnw::*;
 pub fn render() {
     let mut timer = Stopwatch::start_new();
 
-    let (cam, image_width, image_height) = cam_scene2();
+    let (cam, image_width, image_height) = cam_scene5_emissive();
     let (iw_f64, ih_f64) = (image_width as f64, image_height as f64);
     // SETUP Lights for direct shadow rays
 
@@ -90,7 +90,7 @@ pub fn render() {
 
     // SETUP Objects and materials 
     
-    let (mut hittables, mut material_vec) = obj_scene4_earth();
+    let (mut hittables, mut material_vec) = obj_scene5_emissive();
 
     println!("P3\n{} {}\n255\n", image_width, image_height);
     
@@ -108,7 +108,7 @@ pub fn render() {
     //let mut sender: mpsc::Sender<Pixel>;
     //let mut receiver: mpsc::Receiver<Pixel>;
     //let (sender, receiver) = mpsc::channel();
-
+    let bg_col = colorRGB::new();
     let arc_hit = Arc::new(hittables);
     let mut arc_iters: Arc<Mutex<Vec<i32>>> = Arc::new(Mutex::new(Vec::new()));
 
@@ -135,7 +135,7 @@ pub fn render() {
                             let u = (j as f64 + rand_f64()) / (iw_f64 - 1.);
                             let v = (i as f64 + rand_f64()) / (ih_f64 - 1.);
                             let r = cam.focus_time_ray(u, v);
-                            let ambient_indirect = ray_hits(&r, Arc::clone(&hit_arc), depth, Arc::clone(&clone_iters));
+                            let ambient_indirect = ray_hits(&r, Arc::clone(&hit_arc), depth, Arc::clone(&clone_iters), bg_col);
                             //let lights_direct = light_hits(&r, Arc::clone(&light_arc), Arc::clone(&hit_arc));
                             pixel = pixel + ambient_indirect;// + lights_direct;
                         }                   
@@ -165,4 +165,4 @@ pub fn render() {
     }
 
     eprintln!("Took {} ms", timer.ms());
-}
+} 

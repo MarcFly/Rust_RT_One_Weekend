@@ -76,8 +76,13 @@ impl sphere {
         //     <0 1 0> yields <0.50 1.00>       < 0 -1  0> yields <0.50 0.00>
         //     <0 0 1> yields <0.25 0.50>       < 0  0 -1> yields <0.75 0.50>
         
-        let theta = (-hit_pos.y()).acos();
-        let phi = (-hit_pos.z()).atan2(*hit_pos.x()) + PI;
+        // Because rust acos onyl works in range {0,1}, move hit pos to relative origin
+        // Then set it to range {0,1} using the radius
+        let frac_y = (hit_pos.v[1].abs() - self.center.v[1].abs()) / self.radius;
+        let adj_y = frac_y * (hit_pos.v[1] / hit_pos.v[1].abs());
+        
+        let theta = (-adj_y).acos();        
+        let phi = (-hit_pos.v[2]).atan2(hit_pos.v[0]) + PI;
         
         uv.v[0] = phi / (2.*PI);
         uv.v[1] = theta / PI;
