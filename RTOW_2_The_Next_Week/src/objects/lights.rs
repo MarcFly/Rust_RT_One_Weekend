@@ -52,7 +52,7 @@ impl light {
         rec.p = r.at(rec.t);
         rec.n = (rec.p - self.center) / self.intensity; // This is bad, only returns normal pointing outwards
         // What if we need to differentiate between from and back face!
-        rec.set_face_normal(r);
+        rec.set_face_normal(r, rec.n);
         //rec.mat = Arc::clone(&self.mat);
 
         true

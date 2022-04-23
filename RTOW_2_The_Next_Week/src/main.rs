@@ -33,8 +33,8 @@ fn rtow_tnw_fns() {
     //use_noise::render();
     //texture_map::render();
     
-    use_emissive::render();
-    
+    //use_emissive::render();
+    cornell_box::render();
     
     //rayon_test::render();
     //ayon_test::render_no_rayon();

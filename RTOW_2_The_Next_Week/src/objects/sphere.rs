@@ -118,7 +118,7 @@ impl Hittable for sphere {
         rec.p = r.at(rec.t);
         rec.n = (rec.p - self.center) / self.radius; // This is bad, only returns normal pointing outwards
         // What if we need to differentiate between from and back face!
-        rec.set_face_normal(r);
+        rec.set_face_normal(r, rec.n);
         rec.mat = Arc::clone(&self.mat);
         self.get_uv(&rec.p, &mut rec.uv);
 
@@ -152,7 +152,7 @@ pub fn random_in_sphere_1() -> point3 {
         rand_f64_r(-1., 1.),
         rand_f64_r(-1., 1.),
         rand_f64_r(-1., 1.),
-    )
+    ).unit_vec()
 }
 
 pub fn random_in_sphere_bad() -> point3 {
@@ -220,7 +220,7 @@ impl Hittable for moving_sphere {
         rec.n = (rec.p - self.center(r.time)) / self.radius; // This is bad, only returns normal pointing outwards
         rec.iters += 1;
         // What if we need to differentiate between from and back face!
-        rec.set_face_normal(r);
+        rec.set_face_normal(r, rec.n);
         rec.mat = Arc::clone(&self.mat);
 
         true

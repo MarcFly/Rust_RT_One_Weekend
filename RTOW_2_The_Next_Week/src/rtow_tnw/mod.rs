@@ -6,36 +6,23 @@ pub mod rayon_test;
 
 pub mod texture_map;
 pub mod use_emissive;
+pub mod cornell_box;
 
-use crate::materials::emissive::Diffuse_Emissive;
 use crate::taskrunner::*;
 use crate::threadpool::*;
 use std::sync::mpsc;
 
-use crate::materials::textures::*;
-
 use simple_stopwatch::Stopwatch;
 
-use crate::objects::{
-    hit::*,
-    sphere::*,
-    lights::*,
-    hittable_list::*,
-    rectangles::*,
-};
+use crate::objects::prelude::*;
 
-use crate::rtow_math::{
-    vec3::*, 
-    ray::*,
-    rng::*,
-    camera::*,
-    defines::*,
-};
-use crate::materials::*;
+use crate::rtow_math::prelude::*;
+
+use crate::materials::prelude::*;
 use std::sync::*;
 
-static samples: i32 = 200;
-static depth: i32 = 20;
+static samples: i32 = 100;
+static depth: i32 = 50;
 
 pub fn base_cam() -> (camera, i32, i32) {
     let aspect_ratio = 16. / 9.;
@@ -210,7 +197,7 @@ pub fn cam_scene5_emissive() -> (camera, i32, i32) {
     
     let og = point3::from(26.,3.,6.);
     let lookat = point3::from(0.,2.,0.);
-    let vup = vec3::from(0., 2.,0.);
+    let vup = vec3::from(0., 1.,0.);
     let focus_dist = (og - lookat).length();
     let aperture = 0.;
     (
@@ -246,6 +233,50 @@ pub fn obj_scene5_emissive() -> (hittable_list, Vec<Arc<dyn Material>>) {
 
     hittables.obj_list.push(Arc::new(xy_rect::from(3., 5., 2., 4., -2., Arc::clone(&material_vec[4]))));
 
+
+    hittables.construct_bvh(0., 1.);
+
+    (hittables, material_vec)
+}
+
+pub fn cam_scene6_cornellbox() -> (camera, i32, i32) {
+    let aspect_ratio = 1.;
+    let image_width = 600;
+    let image_height = (image_width as f64 / aspect_ratio) as i32;
+    let iw_f64 = image_width as f64;
+    let ih_f64 = image_height as f64;
+    let focal_length = 1.;
+    
+    let og = point3::from(278.,278.,-800.);
+    let lookat = point3::from(278.,278.,0.);
+    let vup = vec3::from(0., 1.,0.);
+    let focus_dist = (og - lookat).length();
+    let aperture = 0.;
+    (
+        camera::from_all(og, lookat, vup, 40., aspect_ratio, aperture, focus_dist, 0., 1.),
+        image_width,
+        image_height,
+    )
+}
+
+pub fn obj_scene6_CornellBox() -> (hittable_list, Vec<Arc<dyn Material>>) {
+    let mut hittables: hittable_list = hittable_list::new();
+
+    let mut material_vec : Vec<Arc<dyn Material>> = Vec::new();
+
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(Solid_Color::from(0.65, 0.05, 0.05))}));
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(Solid_Color::from(0.73, 0.73, 0.73))}));
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(Solid_Color::from(0.12, 0.45, 0.15))}));
+    material_vec.push(Arc::new(Diffuse_Emissive{albedo: colorRGB::from(1.,1.,1.), tex: Arc::new(Solid_Color::from(15., 15., 15.))}));
+    hittables.obj_list.push(Arc::new(yz_rect::from(0., 555., 0., 555., 555., Arc::clone(&material_vec[2]))));
+    hittables.obj_list.push(Arc::new(yz_rect::from(0., 555., 0., 555., 0., Arc::clone(&material_vec[0]))));
+    hittables.obj_list.push(Arc::new(xz_rect::from(213., 343., 227., 332., 554., Arc::clone(&material_vec[3]))));
+    hittables.obj_list.push(Arc::new(xz_rect::from(0., 555., 0., 555., 0., Arc::clone(&material_vec[1]))));
+    hittables.obj_list.push(Arc::new(xz_rect::from(0., 555., 0., 555., 555., Arc::clone(&material_vec[1]))));
+    hittables.obj_list.push(Arc::new(xy_rect::from(0., 555., 0., 555., 555., Arc::clone(&material_vec[1]))));
+
+    //hittables.obj_list.push(Arc::new(aa_box::from(point3::from(130., 0., 65.), point3::from(295., 165., 230.), Arc::clone(&material_vec[1]))));
+    //hittables.obj_list.push(Arc::new(aa_box::from(point3::from(265., 0., 295.), point3::from(430., 330., 460.), Arc::clone(&material_vec[1]))));
 
     hittables.construct_bvh(0., 1.);
 

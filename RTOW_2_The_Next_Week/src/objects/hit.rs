@@ -32,9 +32,9 @@ impl hit_record {
             }
         }
     
-    pub fn set_face_normal(&mut self, r: &ray) {
-        self.front_face = r.dir.dot(&self.n) < 0.;
-        self.n = if self.front_face {self.n} else {self.n * -1.};
+    pub fn set_face_normal(&mut self, r: &ray, out_n: vec3) {
+        self.front_face = r.dir.dot(&out_n) < 0.;
+        self.n = if self.front_face {out_n} else {out_n * -1.};
     }
 }
 

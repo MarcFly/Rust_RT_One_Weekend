@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::RwLock;
 use std::sync::mpsc;
+use std::sync::atomic::*;
 
 use std::collections::VecDeque;
 
@@ -21,19 +22,22 @@ struct Worker {
     id: usize,
     thread: Option<thread::JoinHandle<()>>,
     tasks: Arc<Mutex<Box<VecDeque<Message>>>>,
+    num_tasks: Arc<AtomicI32>,
 }
 
 impl Worker {
     fn new(id: usize, safe_send: mpsc::Sender<Message>) -> Worker {
         let queue = Arc::new(Mutex::new(Box::new(VecDeque::new())));
         let move_q = Arc::clone(&queue);
-
+        let mut num_tasks = Arc::new(AtomicI32::from(0));
+        let mut move_num_tasks = Arc::clone(&mut num_tasks);
         let thread_b = thread::spawn(move || loop {
             {
                 let mut msg;
                 {
                     let mut ret: Option<Message> = { 
                         let mut task = move_q.lock().unwrap();
+                        move_num_tasks.store(move_num_tasks.load(std::sync::atomic::Ordering::Acquire) - 1, std::sync::atomic::Ordering::Release);
                         task.pop_front()
                     };
 
@@ -57,6 +61,7 @@ impl Worker {
         Worker {id, 
             thread: Some(thread_b), 
             tasks: queue,
+            num_tasks,
         }
     }
 }
@@ -89,8 +94,13 @@ impl Runner {
         //    let len = t.tasks.read().unwrap().len() as i32;
         //    least_num = if least_num > len { idx_least = t.id; len} else {least_num};
         //}
+        {
+            self.threads[self.last_add].tasks.lock().unwrap().push_back(Message::NewJob(Box::new(f)));
+        }
 
-        self.threads[self.last_add].tasks.lock().unwrap().push_back(Message::NewJob(Box::new(f)));
+        let v = self.threads[self.last_add].num_tasks.load(std::sync::atomic::Ordering::Acquire);
+        self.threads[self.last_add].num_tasks.store(v + 1, std::sync::atomic::Ordering::Release);
+
         self.last_add = if self.last_add < self.threads.len() - 1 { self.last_add + 1} else {0};
 
         
@@ -98,7 +108,7 @@ impl Runner {
 
     pub fn ocupancy(&self) {
         for t in &self.threads {
-            eprintln!("Thread {} with {} tasks.", t.id, t.tasks.lock().unwrap().len());
+            eprintln!("Thread {} with {} tasks.", t.id, t.num_tasks.load(std::sync::atomic::Ordering::Acquire));
         }
     }
 

@@ -1,5 +1,6 @@
 pub mod textures;
 pub mod emissive;
+pub mod prelude;
 // ----------------
 
 use crate::rtow_math::{
@@ -54,6 +55,7 @@ pub struct lambertian {
 impl Material for lambertian {
     fn scatter(&self, r: &ray, rec: &hit_record, attenuation: &mut colorRGB, scatter: &mut ray) -> bool {
         let mut scatter_dir = rec.n + random_in_sphere();
+        scatter_dir = scatter_dir.unit_vec();
         if(scatter_dir.near_zero()) {
             scatter_dir = rec.n;
         }
@@ -63,7 +65,8 @@ impl Material for lambertian {
     }
 
     fn scatter_tex(&self, r: &ray, rec: &hit_record, attenuation: &mut colorRGB, scatter: &mut ray) -> bool {
-        let mut scatter_dir = rec.n + random_in_sphere();
+        let mut scatter_dir = rec.n.unit_vec() + random_in_sphere().unit_vec();
+        scatter_dir = scatter_dir.unit_vec();
         if(scatter_dir.near_zero()) {
             scatter_dir = rec.n;
         }
