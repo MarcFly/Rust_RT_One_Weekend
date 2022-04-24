@@ -264,9 +264,9 @@ pub fn obj_scene6_CornellBox() -> (hittable_list, Vec<Arc<dyn Material>>) {
 
     let mut material_vec : Vec<Arc<dyn Material>> = Vec::new();
 
-    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(Solid_Color::from(0.65, 0.05, 0.05))}));
-    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(Solid_Color::from(0.73, 0.73, 0.73))}));
-    material_vec.push(Arc::new(lambertian{albedo: colorRGB::new(), tex: Arc::new(Solid_Color::from(0.12, 0.45, 0.15))}));
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::one(), tex: Arc::new(Solid_Color::from(0.65, 0.05, 0.05))}));
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::one(), tex: Arc::new(Solid_Color::from(0.73, 0.73, 0.73))}));
+    material_vec.push(Arc::new(lambertian{albedo: colorRGB::one(), tex: Arc::new(Solid_Color::from(0.12, 0.45, 0.15))}));
     material_vec.push(Arc::new(Diffuse_Emissive{albedo: colorRGB::from(1.,1.,1.), tex: Arc::new(Solid_Color::from(15., 15., 15.))}));
     hittables.obj_list.push(Arc::new(yz_rect::from(0., 555., 0., 555., 555., Arc::clone(&material_vec[2]))));
     hittables.obj_list.push(Arc::new(yz_rect::from(0., 555., 0., 555., 0., Arc::clone(&material_vec[0]))));
@@ -275,8 +275,8 @@ pub fn obj_scene6_CornellBox() -> (hittable_list, Vec<Arc<dyn Material>>) {
     hittables.obj_list.push(Arc::new(xz_rect::from(0., 555., 0., 555., 555., Arc::clone(&material_vec[1]))));
     hittables.obj_list.push(Arc::new(xy_rect::from(0., 555., 0., 555., 555., Arc::clone(&material_vec[1]))));
 
-    //hittables.obj_list.push(Arc::new(aa_box::from(point3::from(130., 0., 65.), point3::from(295., 165., 230.), Arc::clone(&material_vec[1]))));
-    //hittables.obj_list.push(Arc::new(aa_box::from(point3::from(265., 0., 295.), point3::from(430., 330., 460.), Arc::clone(&material_vec[1]))));
+    hittables.obj_list.push(Arc::new(aa_box::from(point3::from(130., 0., 65.), point3::from(295., 165., 230.), Arc::clone(&material_vec[1]))));
+    hittables.obj_list.push(Arc::new(aa_box::from(point3::from(265., 0., 295.), point3::from(430., 330., 460.), Arc::clone(&material_vec[1]))));
 
     hittables.construct_bvh(0., 1.);
 

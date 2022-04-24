@@ -61,13 +61,27 @@ fn ray_hits(r: &ray, obj: Arc<hittable_list>, depth_: i32, debug_iter_vec: Arc<M
     let mut scattered = ray::new();
     let emitted = rec.mat.emitted(rec.uv.v[0], rec.uv.v[1], &rec.p);
 
-        //let mut attenuation = colorRGB::new();
-    unsafe{
-        if(!Material::scatter_tex(&*rec.mat, r, &rec, &mut attenuation, &mut scattered)){
-            debug_iter_vec.lock().unwrap().push(rec.iters);
-            return emitted;
-        }
+    //let mut attenuation = colorRGB::new();
+    //let res1 = rec.mat.scatter_tex(r, &rec, &mut attenuation, &mut scattered);
+    //let mut attenuation2 = colorRGB::new();
+    //let mut scattered2 = ray::new();
+    //let mut rec2 = rec.clone();
+    //let res2 = unsafe { Material::scatter_tex( &*rec2.mat, r, &rec2, &mut attenuation2, &mut scattered2) };
+    //if res1 != res2 || attenuation != attenuation2 || scattered2 != scattered {
+    //    panic!("What the fuck???")
+    //}
+    if !rec.mat.scatter_tex(r, &rec, &mut attenuation, &mut scattered) {
+        debug_iter_vec.lock().unwrap().push(rec.iters);
+        return emitted;
     }
+
+    //unsafe {
+    //    if !Material::scatter_tex( &*rec.mat, r, &rec, &mut attenuation, &mut scattered) {
+    //        debug_iter_vec.lock().unwrap().push(rec.iters);
+    //        return emitted;
+    //    }
+    //}
+
     debug_iter_vec.lock().unwrap().push(rec.iters);
     emitted + ray_hits(&scattered, obj, next_depth, Arc::clone(&debug_iter_vec), bg_col) * attenuation
 }

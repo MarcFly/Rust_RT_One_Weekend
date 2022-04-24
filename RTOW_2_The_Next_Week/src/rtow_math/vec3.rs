@@ -3,6 +3,7 @@ pub type colorRGB = vec3;
 use num;
 
 #[derive(Debug, Copy, Clone)]
+#[derive(PartialEq)]
 pub struct vec3 {
     pub v: [f64; 3],
 }
@@ -85,6 +86,7 @@ impl vec3 {
     pub fn new() -> vec3 { vec3{v: [0.,0.,0.], } }
     pub fn from(x:f64, y:f64, z:f64) -> vec3 { vec3{v: [x,y,z]}}
     pub fn from_vec(v: vec3) -> vec3 { vec3::from(v.v[0], v.v[1], v.v[2]) }
+    pub fn one() -> vec3 { vec3::from(1.,1.,1.) }
     pub fn new_rand(min: f64, max: f64) -> vec3 { vec3{ v: [rand_f64_r(min,max), rand_f64_r(min,max), rand_f64_r(min,max)]}}
     pub fn x(&self) -> &f64 {&self.v[0]}
     pub fn y(&self) -> &f64 {&self.v[1]}

@@ -136,14 +136,29 @@ impl Hittable for sphere {
 use crate::rtow_math::defines;
 use crate::rtow_math::rng::*;
 
+pub fn random_in_cylindermap() -> point3 {
+    //let frac_y = (hit_pos.v[1].abs() - self.center.v[1].abs()) / self.radius;
+    //    let adj_y = frac_y * (hit_pos.v[1] / hit_pos.v[1].abs());
+
+    let theta = 2. * PI * rand_f64_r(0., 1.);
+
+    let z = rand_f64_r(-1.,1.);
+    let r = (1. - z * z).sqrt();
+    let y = theta.cos();
+    let x = theta.sin();
+    let ret = vec3::from(r* theta.cos(), r* theta.sin(), z);
+
+    vec3::from(r* theta.cos(), r* theta.sin(), z) * rand_f64().cbrt()
+}
+
 pub fn random_in_sphere() -> point3 {
-    while(true) {
-        let p = point3::from(
-            rand_f64_r(-1., 1.),
-            rand_f64_r(-1., 1.),
-            rand_f64_r(-1., 1.));
-        if p.length() < 1. { return p }
-    };
+        while(true) {
+            let p = point3::from(
+                rand_f64_r(-1., 1.),
+                rand_f64_r(-1., 1.),
+                rand_f64_r(-1., 1.));
+            if p.length_squared() >= 1. { return p }
+        };
     point3::new() // Something has gone terribly bad
 }
 

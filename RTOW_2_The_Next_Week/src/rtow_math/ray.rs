@@ -1,5 +1,6 @@
 use crate::rtow_math::vec3::*;
 
+#[derive(PartialEq)]
 pub struct ray {
     pub origin: point3,
     pub dir: vec3,
