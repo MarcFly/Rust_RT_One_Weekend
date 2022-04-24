@@ -22,7 +22,7 @@ use crate::materials::prelude::*;
 use std::sync::*;
 
 static samples: i32 = 100;
-static depth: i32 = 50;
+static depth: i32 = 20;
 
 pub fn base_cam() -> (camera, i32, i32) {
     let aspect_ratio = 16. / 9.;
@@ -241,7 +241,7 @@ pub fn obj_scene5_emissive() -> (hittable_list, Vec<Arc<dyn Material>>) {
 
 pub fn cam_scene6_cornellbox() -> (camera, i32, i32) {
     let aspect_ratio = 1.;
-    let image_width = 600;
+    let image_width = 200;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
     let iw_f64 = image_width as f64;
     let ih_f64 = image_height as f64;
@@ -275,9 +275,27 @@ pub fn obj_scene6_CornellBox() -> (hittable_list, Vec<Arc<dyn Material>>) {
     hittables.obj_list.push(Arc::new(xz_rect::from(0., 555., 0., 555., 555., Arc::clone(&material_vec[1]))));
     hittables.obj_list.push(Arc::new(xy_rect::from(0., 555., 0., 555., 555., Arc::clone(&material_vec[1]))));
 
-    hittables.obj_list.push(Arc::new(aa_box::from(point3::from(130., 0., 65.), point3::from(295., 165., 230.), Arc::clone(&material_vec[1]))));
-    hittables.obj_list.push(Arc::new(aa_box::from(point3::from(265., 0., 295.), point3::from(430., 330., 460.), Arc::clone(&material_vec[1]))));
+    // Order should be Rotate -> Translate
+    // Because else the translation is performed in the axis of the rotated object, not the world Axis!!!
+    hittables.obj_list.push(Arc::new(
+        translated::new( Box::new(
+                rotated::new(
+                    Box::new( aa_box::from(point3::new(), point3::from(165., 330., 165.), Arc::clone(&material_vec[1]))),
+                    vec3::from(0.,15.,0.)
+                )),           
+        vec3::from(265., 0., 295.)
+    )));
+            
 
+    hittables.obj_list.push(Arc::new(
+        translated::new( Box::new(
+                rotated::new(
+                    Box::new( aa_box::from(point3::new(), point3::from(165., 165., 165.), Arc::clone(&material_vec[1]))
+                ),vec3::from(0.,-18.,0.)
+            )), 
+    vec3::from(130., 0., 65.)
+    )));
+    
     hittables.construct_bvh(0., 1.);
 
     (hittables, material_vec)

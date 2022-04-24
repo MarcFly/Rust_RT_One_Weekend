@@ -18,6 +18,7 @@ pub fn hit_aabb(min: point3, max: point3, ray: &ray) -> f64 {
 use crate::materials::*;
 use crate::materials::textures::*;
 
+#[derive(Clone)]
 pub struct aabb {
     pub min: point3,
     pub max: point3,
