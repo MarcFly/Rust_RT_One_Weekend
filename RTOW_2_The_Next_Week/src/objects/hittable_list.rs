@@ -75,6 +75,15 @@ impl hittable_list {
     }
 }
 
+impl Hittable for hittable_list {
+    fn hit(&self, r: &ray, t_min: f64, t_max: f64, rec:&mut hit_record) -> bool {
+        self.hit_bvh(t_min, t_max, rec, r)
+    }
+    fn get_aabb(&self, time0: f64, time1: f64) -> (bool, aabb) {
+        self.compute_full_aabb(time0, time1)
+    }
+}
+
 use crate::materials::*;
 struct bvh_node {
     left_ch: Arc<dyn Hittable>,

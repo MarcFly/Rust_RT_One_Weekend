@@ -53,6 +53,7 @@ fn check_discriminant(discriminant: f64, b: f64, a: f64) -> f64 {
 
 use std::f64::consts::PI;
 use std::sync::Arc;
+#[derive(Clone)]
 pub struct sphere {
     pub center: point3,
     pub radius: f64,

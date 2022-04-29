@@ -34,8 +34,11 @@ fn rtow_tnw_fns() {
     //texture_map::render();
     
     //use_emissive::render();
-    cornell_box::render();
-    
+    //cornell_box::render();
+    //use_volumes::render();
+
     //rayon_test::render();
-    //ayon_test::render_no_rayon();
+    //rayon_test::render_no_rayon();
+
+    final_scene_render::render();
 }

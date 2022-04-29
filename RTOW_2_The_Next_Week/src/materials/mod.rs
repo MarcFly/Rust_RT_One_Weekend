@@ -52,6 +52,10 @@ pub struct lambertian {
     pub tex: Arc<dyn Texture>,
 }
 
+impl lambertian {
+    pub fn new(albedo: colorRGB, tex: Arc<dyn Texture>) -> lambertian { lambertian{albedo, tex}}
+}
+
 impl Material for lambertian {
     fn scatter(&self, r: &ray, rec: &hit_record, attenuation: &mut colorRGB, scatter: &mut ray) -> bool {
         let mut scatter_dir = rec.n + random_in_sphere();
@@ -86,6 +90,10 @@ pub struct metal {
     pub albedo: colorRGB,
     pub fuzz: f64,
     pub tex: Arc<dyn Texture>,
+}
+
+impl metal {
+    pub fn new(fuzz: f64, tex: Arc<dyn Texture>) -> metal {metal{albedo: colorRGB::new(), fuzz, tex}}
 }
 
 impl Material for metal {
@@ -133,6 +141,10 @@ impl dielectric {
         }
     }
 
+    pub fn from(alpha: f64, index_refr: f64, tex: Arc<dyn Texture>) -> dielectric {
+        dielectric{ albedo: colorRGB::one(), alpha, index_refr, tex }
+    }
+
     pub fn reflectance(cos: f64, ir: f64) -> f64 {
         let mut r0 = (1. - ir) / (1. + ir);
         r0 = r0*r0;
@@ -178,6 +190,35 @@ impl Material for dielectric {
         };
 
         *scatter = ray::from_t(rec.p, refracted, r.time);
+        true
+    }
+
+    fn emitted(&self, u: f64, v: f64, p: &point3) -> colorRGB {
+        colorRGB::new()
+    }
+}
+
+
+// Volume Materials??
+
+pub struct isotropic {
+    tex: Arc<dyn Texture>,
+}
+
+impl isotropic {
+    pub fn new(tex: Arc<dyn Texture>) -> isotropic {
+        isotropic{tex}
+    }
+}
+
+impl Material for isotropic {
+    fn scatter(&self, r: &ray, rec: &hit_record, attenuation: &mut colorRGB, scatter: &mut ray) -> bool {
+        false
+    }
+
+    fn scatter_tex(&self, r: &ray, rec: &hit_record, attenuation: &mut colorRGB, scatter: &mut ray) -> bool {
+        *scatter = ray::from_t(rec.p, random_in_sphere(), r.time);
+        *attenuation = self.tex.value(rec.uv.v[0], rec.uv.v[1], &rec.p);
         true
     }
 

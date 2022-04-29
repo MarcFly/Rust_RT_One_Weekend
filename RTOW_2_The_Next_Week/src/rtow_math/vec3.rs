@@ -88,6 +88,7 @@ impl vec3 {
     pub fn from(x:f64, y:f64, z:f64) -> vec3 { vec3{v: [x,y,z]}}
     pub fn from_vec(v: vec3) -> vec3 { vec3::from(v.v[0], v.v[1], v.v[2]) }
     pub fn one() -> vec3 { vec3::from(1.,1.,1.) }
+    pub fn up() -> vec3 {vec3::from(0.,1.,0.)}
     pub fn new_rand(min: f64, max: f64) -> vec3 { vec3{ v: [rand_f64_r(min,max), rand_f64_r(min,max), rand_f64_r(min,max)]}}
     pub fn inf_min() -> vec3 { vec3 {v:[-INFINITY, -INFINITY, -INFINITY]}}
     pub fn inf_max() -> vec3 { vec3 {v:[INFINITY, INFINITY, INFINITY]}}

@@ -6,3 +6,4 @@ pub use crate::objects::hittable_list::*;
 pub use crate::objects::rectangles::*;
 pub use crate::objects::rtow_box::*;
 pub use crate::objects::transformed::*;
+pub use crate::objects::volumes::*;
