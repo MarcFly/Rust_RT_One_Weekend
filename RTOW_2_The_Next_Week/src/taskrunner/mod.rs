@@ -106,10 +106,14 @@ impl Runner {
         
     }
 
-    pub fn ocupancy(&self) {
+    pub fn ocupancy(&self) -> bool {
+        let mut ret = false;
         for t in &self.threads {
-            eprintln!("Thread {} with {} tasks.", t.id, t.num_tasks.load(std::sync::atomic::Ordering::Acquire));
+            let num_tasks = t.num_tasks.load(std::sync::atomic::Ordering::Acquire);
+            eprintln!("Thread {} with {} tasks.", t.id, num_tasks);
+            ret = !(!ret && num_tasks > 0);
         }
+        !ret
     }
 
     pub fn wait_all(&self) {

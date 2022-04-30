@@ -77,13 +77,14 @@ impl sphere {
         //     <0 1 0> yields <0.50 1.00>       < 0 -1  0> yields <0.50 0.00>
         //     <0 0 1> yields <0.25 0.50>       < 0  0 -1> yields <0.75 0.50>
         
-        // Because rust acos onyl works in range {0,1}, move hit pos to relative origin
-        // Then set it to range {0,1} using the radius
-        let frac_y = (hit_pos.v[1].abs() - self.center.v[1].abs()) / self.radius;
+        // Because rust acos onyl works in range {-1,1}, move hit pos to relative origin
+        // Then set it to range {-1,1} using the radius
+        let frac_y = (hit_pos.v[1] - self.center.v[1]) / self.radius;
+        let frac_hit = (*hit_pos - self.center) / self.radius;
         let adj_y = frac_y * (hit_pos.v[1] / hit_pos.v[1].abs());
-        
-        let theta = (-adj_y).acos();        
-        let phi = (-hit_pos.v[2]).atan2(hit_pos.v[0]) + PI;
+
+        let theta = (-frac_hit.v[1]).acos();        
+        let phi = (-frac_hit.v[2]).atan2(frac_hit.v[0]) + PI;
         
         uv.v[0] = phi / (2.*PI);
         uv.v[1] = theta / PI;
@@ -158,20 +159,20 @@ pub fn random_in_sphere() -> point3 {
                 rand_f64_r(-1., 1.),
                 rand_f64_r(-1., 1.),
                 rand_f64_r(-1., 1.));
-            if p.length_squared() >= 1. { return p }
+            if p.length_squared() < 1. { return p }
         };
     point3::new() // Something has gone terribly bad
 }
 
-pub fn random_in_sphere_1() -> point3 {
+pub fn random_in_unit_cube() -> point3 {
     point3::from(
-        rand_f64_r(-1., 1.),
-        rand_f64_r(-1., 1.),
-        rand_f64_r(-1., 1.),
-    ).unit_vec()
+        rand_f64_r(-0.5, 0.5),
+        rand_f64_r(-0.5, 0.5),
+        rand_f64_r(-0.5, 0.5),
+    )
 }
 
-pub fn random_in_sphere_bad() -> point3 {
+pub fn random_in_circumsctripted_cube() -> point3 {
     point3::from(
         rand_f64_r(*defines::side_min, *defines::side_max),
         rand_f64_r(*defines::side_min, *defines::side_max),

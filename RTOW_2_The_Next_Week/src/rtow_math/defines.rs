@@ -27,6 +27,7 @@ pub fn random_in_disk() -> point3 {
 #[macro_use]
 use lazy_static::*;
 
+// This is a cube inscripted in a sphere of radius 1
 lazy_static! {
     pub static ref side_max: f64 = { 1. / (3.0 as f64).sqrt() / 2.0};
     pub static ref side_min: f64 = { -1. / (3.0 as f64).sqrt() / 2.0};

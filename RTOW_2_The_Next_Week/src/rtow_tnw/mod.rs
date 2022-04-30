@@ -23,8 +23,8 @@ use crate::rtow_math::prelude::*;
 use crate::materials::prelude::*;
 use std::sync::*;
 
-static samples: i32 = 20;
-static depth: i32 = 10;
+static samples: i32 = 200;
+static depth: i32 = 100;
 
 pub fn base_cam() -> (camera, i32, i32) {
     let aspect_ratio = 16. / 9.;
@@ -434,7 +434,7 @@ pub fn obj_final_scene() -> (hittable_list, Vec<Arc<dyn Material>>) {
     hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(400., 200., 400.), 100., Arc::clone(&material_vec[7]))));
 
     // Noise Sphere
-    material_vec.push(Arc::new( lambertian::new(colorRGB::new(), Arc::new(Perlin_Noise::new()))));
+    material_vec.push(Arc::new( lambertian::new(colorRGB::new(), Arc::new(Perlin_Noise::new_scaled(0.1)))));
     hittables.obj_list.push(Arc::new( sphere::from_mat(point3::from(220., 280., 300.), 80., Arc::clone(&material_vec[8]))));
 
     // Spheres in a Box
@@ -442,7 +442,7 @@ pub fn obj_final_scene() -> (hittable_list, Vec<Arc<dyn Material>>) {
     let ns = 1000;
     let mut sphere_in_box = hittable_list::new();
     for i in 0..1000 {
-        sphere_in_box.obj_list.push(Arc::new(sphere::from_mat(random_in_sphere() * 16., 10., Arc::clone(&material_vec[9]))));
+        sphere_in_box.obj_list.push(Arc::new(sphere::from_mat(random_in_unit_cube() * 165., 10., Arc::clone(&material_vec[9]))));
     }
     sphere_in_box.construct_bvh(0.,1.);
 

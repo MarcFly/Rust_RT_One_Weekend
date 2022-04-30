@@ -161,6 +161,7 @@ pub fn render() {
                 None => break,
             }
         }        
+        while(tp.ocupancy()){std::thread::sleep(std::time::Duration::from_secs(2))}
     }
 
     let unwrapped_iter_vec = arc_iters.lock().unwrap();
