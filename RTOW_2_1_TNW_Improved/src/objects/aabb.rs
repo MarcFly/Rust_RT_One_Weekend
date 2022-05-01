@@ -103,6 +103,31 @@ impl aabb {
 
         true
     }
+
+    pub fn hit_branchless(&self, r: &ray, t_min: f64, t_max: f64) -> bool {
+        let (mut calc_min, mut calc_max) = (t_min, t_max);
+        let inverse_dir = vec3::from(1./r.dir.v[0], 1./r.dir.v[1], 1./r.dir.v[2]);
+        
+        let mut t0 = (self.min.v[0] - r.origin.v[0]) * inverse_dir.v[0];
+        let mut t1 = (self.max.v[0] - r.origin.v[0]) * inverse_dir.v[0];
+
+        calc_min = t0.min(t1);
+        calc_max = t0.max(t1);
+
+        let mut t0 = (self.min.v[1] - r.origin.v[1]) * inverse_dir.v[1];
+        let mut t1 = (self.max.v[1] - r.origin.v[1]) * inverse_dir.v[1];
+
+        calc_min = t0.min(t1);
+        calc_max = t0.max(t1);
+
+        let mut t0 = (self.min.v[2] - r.origin.v[2]) * inverse_dir.v[2];
+        let mut t1 = (self.max.v[2] - r.origin.v[2]) * inverse_dir.v[2];
+
+        calc_min = t0.min(t1);
+        calc_max = t0.max(t1);
+
+        calc_max >= calc_min
+    }
 }
 
 use crate::objects::hittable_list::*;
