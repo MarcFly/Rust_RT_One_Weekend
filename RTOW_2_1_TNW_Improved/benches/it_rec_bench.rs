@@ -5,6 +5,8 @@ use Rust_RT_One_Weekend::objects::prelude::*;
 use Rust_RT_One_Weekend::rtow_math::prelude::*;
 use std::sync::*;
 
+use memory_stats::memory_stats;
+
 fn ray_hits_iterative(r: &ray, obj: &Arc<hittable_list>, depth_: i32, bg_col: colorRGB, last_col: colorRGB) ->  (ray, colorRGB, colorRGB, bool) {
     if(depth_ < 1) {return (ray::new(), colorRGB::new(), colorRGB::one(), true)}
 
@@ -73,6 +75,8 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     println!("P3\n{} {}\n255\n", image_width, image_height);
     
+   
+
     // Parallel Pixels for rayon version
     let mut cols: Box<Vec<Par_Pixel>> = Box::new(Vec::new());
     {
@@ -101,6 +105,10 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let arc_hit = Arc::new(hittables);
     let arc_iters: Arc<Mutex<Vec<i32>>> = Arc::new(Mutex::new(Vec::new()));
 
+    if let Some(usage) = memory_stats() {
+        eprintln!("Recursive PreTest Physical Mem: {}", usage.physical_mem / 1024 / 1024);
+        eprintln!("Recursive PreTest Virtual Mem: {}", usage.virtual_mem / 1024 / 1024);
+    };
 
     c.bench_function("Recursive", |b| b.iter(|| {
         let mut j = rand_f64_r(0., image_width as f64).floor() as usize;
@@ -120,6 +128,18 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         }                   
         pixel.write_col_to(curr_pixel, 0);
     }));
+    if let Some(usage) = memory_stats() {
+        eprintln!("Recursive PostTest Physical Mem: {}", usage.physical_mem / 1024 / 1024);
+        eprintln!("Recursive PostTest Virtual Mem: {}", usage.virtual_mem / 1024 / 1024);
+    };
+
+    eprintln!("\nSleep 10 secs to reset mem\n");
+    std::thread::sleep(std::time::Duration::from_secs(10));
+
+    if let Some(usage) = memory_stats() {
+        eprintln!("Iterative PreTest Physical Mem: {}", usage.physical_mem / 1024 / 1024);
+        eprintln!("Iterative PreTest Virtual Mem: {}", usage.virtual_mem / 1024 / 1024);
+    };
 
     c.bench_function("Iterative", |b| b.iter(|| {
         let mut pixel = cols[rand_f64_r(0., cols.len() as f64).floor() as usize].clone();
@@ -151,6 +171,11 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 pixel.color = pixel.color + ambient_indirect;
             }
     }));
+
+    if let Some(usage) = memory_stats() {
+        eprintln!("Iterative PostTest Physical Mem: {}", usage.physical_mem / 1024 / 1024);
+        eprintln!("Iterative PostTest Virtual Mem: {}", usage.virtual_mem / 1024 / 1024);
+    };
 }
 
 criterion_group!(benches, criterion_benchmark);
