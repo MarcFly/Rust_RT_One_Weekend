@@ -2,12 +2,12 @@
 #![allow(unused_variables)]
 #![allow(warnings)]
 
-mod taskrunner;
-mod rtow_math;
-mod materials;
-mod objects;
+pub mod taskrunner;
+pub mod rtow_math;
+pub mod materials;
+pub mod objects;
 
-mod rtow_tnw;
+pub mod rtow_tnw;
 
 use simple_stopwatch::Stopwatch;
 

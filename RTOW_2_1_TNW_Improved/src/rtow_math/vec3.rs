@@ -198,6 +198,7 @@ impl vec3 {
 
 unsafe impl Send for vec3 {}
 
+#[derive(Clone)]
 pub struct Par_Pixel {
     pub color: colorRGB,
     pub i: i32,

@@ -187,19 +187,20 @@ pub fn render() {
 
 
     eprintln!("Tasks finished running at {} ms", timer.ms());
-    {
-        let mut vec = arc_cols.lock().unwrap();
-        for i in (0..vec.len()) {
-            vec[i].lock().unwrap().write_color(samples as f64);
-            //vec[i].write_color(samples as f64);
-        }
-    }
-
-    if let Some(usage) = memory_stats() {
-        eprintln!("Recursive PostWriteFile Physical Mem: {}", usage.physical_mem / 1024 / 1024);
-        eprintln!("Recursive PostWriteFile Virtual Mem: {}", usage.virtual_mem / 1024 / 1024);
-    };
-    eprintln!();
+    //
+    //{
+    //    let mut vec = arc_cols.lock().unwrap();
+    //    for i in (0..vec.len()) {
+    //        vec[i].lock().unwrap().write_color(samples as f64);
+    //        //vec[i].write_color(samples as f64);
+    //    }
+    //}
+//
+    //if let Some(usage) = memory_stats() {
+    //    eprintln!("Recursive PostWriteFile Physical Mem: {}", usage.physical_mem / 1024 / 1024);
+    //    eprintln!("Recursive PostWriteFile Virtual Mem: {}", usage.virtual_mem / 1024 / 1024);
+    //};
+    //eprintln!();
 
     eprintln!("Took {} ms", timer.ms());
 } 

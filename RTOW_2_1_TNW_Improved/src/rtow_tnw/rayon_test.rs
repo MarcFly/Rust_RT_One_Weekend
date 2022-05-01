@@ -61,6 +61,7 @@ fn ray_hits(r: &ray, obj: &Arc<hittable_list>, depth_: i32, debug_iter_vec: &Arc
     )
 }
 
+#[derive(Copy, Clone)]
 enum Pixel {
     RGB(usize, colorRGB),
 }
@@ -161,21 +162,21 @@ pub fn render() {
 
 
     eprintln!("Tasks finished running at {} ms", timer.ms());
-    {
-        //let mut vec = arc_cols.lock().unwrap();
-        let _len = cols.len();
-        for i in (0.._len) {
-            //vec[i].lock().unwrap().write_color(samples as f64);
-            //vec[i].write_color(samples as f64);
-            cols[i].color.write_color(samples as f64);
-        }
-    }
-
-    if let Some(usage) = memory_stats() {
-        eprintln!("Iterative PostWriteFile Physical Mem: {}", usage.physical_mem / 1024 / 1024);
-        eprintln!("Iterative PostWriteFile Virtual Mem: {}", usage.virtual_mem / 1024 / 1024);
-    };
-    eprintln!();
+    //{
+    //    //let mut vec = arc_cols.lock().unwrap();
+    //    let _len = cols.len();
+    //    for i in (0.._len) {
+    //        //vec[i].lock().unwrap().write_color(samples as f64);
+    //        //vec[i].write_color(samples as f64);
+    //        cols[i].color.write_color(samples as f64);
+    //    }
+    //}
+//
+    //if let Some(usage) = memory_stats() {
+    //    eprintln!("Iterative PostWriteFile Physical Mem: {}", usage.physical_mem / 1024 / 1024);
+    //    eprintln!("Iterative PostWriteFile Virtual Mem: {}", usage.virtual_mem / 1024 / 1024);
+    //};
+    //eprintln!();
 
     eprintln!("Took {} ms", timer.ms());
 }
