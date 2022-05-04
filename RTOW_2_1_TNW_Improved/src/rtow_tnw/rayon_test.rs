@@ -39,16 +39,13 @@ fn ray_hits(r: &ray, obj: &Arc<hittable_list>, depth_: i32, debug_iter_vec: &Arc
         debug_iter_vec.lock().unwrap().push(rec.iters);
         return (ray::new(), colorRGB::new(), bg_col, true);
     }
-    if rec.uv.v[0].is_nan() || rec.uv.v[1].is_nan() {
-        let mut test = false;
-        test = true;
-    }
+
     let mut scattered = ray::new();
     let emitted = rec.mat.emitted(rec.uv.v[0], rec.uv.v[1], &rec.p);
 
     if !rec.mat.scatter_tex(r, &rec, &mut attenuation, &mut scattered) {
         debug_iter_vec.lock().unwrap().push(rec.iters);
-        return (scattered, emitted, colorRGB::one(), true);
+        return (scattered, emitted, colorRGB::new(), true);
     }
 
     debug_iter_vec.lock().unwrap().push(rec.iters);
@@ -116,10 +113,11 @@ pub fn render() {
             let pxl_iters = Arc::clone(&arc_iters);
             let pxl_hit = Arc::clone(&arc_hit);
             
-            let mut it_depth = depth;
-            let mut ambient_indirect = colorRGB::one();
-            let mut step_col = colorRGB::new();
+            let mut ambient_indirect = colorRGB::new();
+            let mut attenuation_bounces = colorRGB::one();
+            
             let mut early_out = false;
+            let mut step_col = colorRGB::new();
             let mut step_emit = colorRGB::new();
 
             for s in (0..samples) {
@@ -127,21 +125,33 @@ pub fn render() {
                 let v = (pixel.i as f64 + rand_f64()) / (ih_f64 - 1.);
                 let mut r = cam.focus_time_ray(u, v);
 
+                // Reset accumulation each sample
+                ambient_indirect = colorRGB::new();
+                attenuation_bounces = colorRGB::one();
+
                 for it_depth in (0..depth).rev()
                 {
+                    // In iterative, we have to estimate the effects of the current bounce contribution
+                    // Before we would do that implicitly in (ray_hit * attenuation) each step
+                    // Now we have to accumulate them each time, then apply to the current emission
+                    // When we hit an early out
                     (r, step_emit, step_col, early_out) = ray_hits(&r, &pxl_hit, depth, &pxl_iters, bg_col, ambient_indirect);
+                     
+                    // As bounce accumulation is a mul, we don't want to negate it completely on a 0 color
+                    // Might be reflective in some sort and we can't calculate this step, will come from next
+                    if !step_col.near_zero() {
+                        attenuation_bounces = attenuation_bounces * step_col;
+                    }
                     
-                    ambient_indirect = step_emit * ambient_indirect + ambient_indirect * step_col;
-
-                    if(early_out) {break};
+                    ambient_indirect = ambient_indirect + (step_emit * attenuation_bounces ); // * ambient_indirect;
                     
+                    if early_out {
+                        break;
+                    }
                 }
 
                 pixel.color = pixel.color + ambient_indirect;
             }   
-            if pixel.i as f64 % 50. < 0.00001 && pixel.j as f64 % 50. < 0.00001  {
-                
-            };
                           
             pixel
 
