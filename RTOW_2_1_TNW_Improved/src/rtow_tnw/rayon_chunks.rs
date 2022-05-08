@@ -52,15 +52,12 @@ fn ray_hits(r: &ray, obj: &Arc<hittable_list>, depth_: i32, bg_col: colorRGB, la
     if !obj.hit_bvh(0.0001, std::f64::INFINITY, &mut rec, r) {
         return (ray::new(), colorRGB::new(), bg_col, true);
     }
-    if rec.uv.v[0].is_nan() || rec.uv.v[1].is_nan() {
-        let mut test = false;
-        test = true;
-    }
+
     let mut scattered = ray::new();
     let emitted = rec.mat.emitted(rec.uv.v[0], rec.uv.v[1], &rec.p);
 
     if !rec.mat.scatter_tex(r, &rec, &mut attenuation, &mut scattered) {
-        return (scattered, emitted, colorRGB::one(), true);
+        return (scattered, emitted, colorRGB::new(), true);
     }
     
     (
@@ -97,14 +94,15 @@ pub fn render() {
     
     let mut scanlines: Box<Vec<ScanlineGroup>> = Box::new(Vec::new());
 
+    let num_groups = image_height;
     {
-        //let num_scanlines = 1 + image_height / 16;
-        for i in 0..image_height {
+        let sl_per_group = 1 + image_height / num_groups;
+        for i in 0..num_groups {
             scanlines.push(ScanlineGroup::new(Arc::clone(&arc_hit), bg_col));
         }
 
         for i in (0..image_height).rev() {
-            let curr_group = (image_height - 1) as usize;
+            let curr_group = (i / sl_per_group) as usize;
             for j in 0..image_width {
                 scanlines[curr_group].pixels.push(Par_Pixel{ color: colorRGB::new(), i, j});
             }    
@@ -128,10 +126,11 @@ pub fn render() {
             for i in 0..group.pixels.len() {
                 let mut pixel = &mut group.pixels[i];
 
-                let mut it_depth = depth;
-                let mut ambient_indirect = colorRGB::one();
-                let mut step_col = colorRGB::new();
+                let mut ambient_indirect = colorRGB::new();
+                let mut attenuation_bounces = colorRGB::one();
+                
                 let mut early_out = false;
+                let mut step_col = colorRGB::new();
                 let mut step_emit = colorRGB::new();
                 
                 //let mut out_pixel = Par_Pixel{color: colorRGB::new(), i: pixel.i, j: pixel.j};
@@ -139,12 +138,17 @@ pub fn render() {
                     let u = (pixel.j as f64 + rand_f64()) / (iw_f64 - 1.);
                     let v = (pixel.i as f64 + rand_f64()) / (ih_f64 - 1.);
                     let mut r = cam.focus_time_ray(u, v);
-                
+                    
+                    ambient_indirect = colorRGB::new();
+                    attenuation_bounces = colorRGB::one();
+
                     for it_depth in (0..depth).rev()
                     {
                         (r, step_emit, step_col, early_out) = ray_hits(&r, &group.objs, depth, bg_col, ambient_indirect);
-
-                        ambient_indirect = step_emit * ambient_indirect + ambient_indirect * step_col;
+                        if !step_col.near_zero() {
+                            attenuation_bounces = attenuation_bounces * step_col;
+                        }
+                        ambient_indirect = ambient_indirect + (step_emit * attenuation_bounces);
                     
                         if(early_out) {break};
 
