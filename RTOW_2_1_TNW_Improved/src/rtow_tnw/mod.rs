@@ -1,4 +1,5 @@
 pub mod rayon_test;
+pub mod rayon_chunks;
 
 pub mod final_scene_render;
 use std::sync::mpsc;
@@ -12,8 +13,8 @@ use crate::rtow_math::prelude::*;
 use crate::materials::prelude::*;
 use std::sync::*;
 
-static samples: i32 = 20;
-static depth: i32 = 5;
+static samples: i32 = 50;
+static depth: i32 = 20;
 
 pub fn cam_final_scene() -> (camera, i32, i32) {
     let aspect_ratio = 1.;
