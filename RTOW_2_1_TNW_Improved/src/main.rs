@@ -36,8 +36,9 @@ fn rtow_tnw_fns() {
         eprintln!("Before All Physical Mem: {}", usage.physical_mem / 1024 / 1024);
         eprintln!("Before All Virtual Mem: {}", usage.virtual_mem / 1024 / 1024);
         
-        rayon_test::render();
+        //rayon_test::render();
         //rayon_chunks::render();
+        rayon_tiles::render();
         eprintln!("After Iterative Physical Mem: {}", usage.physical_mem / 1024 / 1024);
         eprintln!("After Iterative Virtual Mem: {}", usage.virtual_mem / 1024 / 1024);
         

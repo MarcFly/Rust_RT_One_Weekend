@@ -9,18 +9,18 @@ use crate::rtow_math::prelude::*;
 use crate::materials::prelude::*;
 use std::sync::*;
 
-unsafe impl Send for ScanlineGroup {}
-unsafe impl Sync for ScanlineGroup {}
+unsafe impl Send for TileGroup {}
+unsafe impl Sync for TileGroup {}
 
-struct ScanlineGroup {
-    pub pixels: Box<Vec<Par_Pixel>>,
+struct TileGroup {
+    pub pixels: Box<Vec<Arc<Mutex<Par_Pixel>>>>,
     objs: Arc<hittable_list>,
     bg_col: colorRGB,
 }
 
-impl ScanlineGroup {
-    pub fn new(objs: Arc<hittable_list>, bg_col: colorRGB) -> ScanlineGroup {
-        ScanlineGroup {
+impl TileGroup {
+    pub fn new(objs: Arc<hittable_list>, bg_col: colorRGB) -> TileGroup {
+        TileGroup {
             pixels: Box::new(Vec::new()),
             objs,
             bg_col,
@@ -92,20 +92,58 @@ pub fn render() {
         
     println!("P3\n{} {}\n255\n", image_width, image_height);
     
-    let mut scanlines: Box<Vec<ScanlineGroup>> = Box::new(Vec::new());
-
-    let num_groups = image_height / 2;
+    let mut image: Box<Vec<Arc<Mutex<Par_Pixel>>>> = Box::new(Vec::new());
     {
-        let sl_per_group = 1 + image_height / num_groups;
+        image.reserve((image_width * image_height) as usize);
+        for i in (0..(image_height as usize)).rev() {
+            for j in 0..image_width {
+                image.push(Arc::new(Mutex::new(Par_Pixel{ color: colorRGB::new(), i: i as i32, j: j as i32 })))
+            }            
+        }
+    }
+
+    let mut tiles: Box<Vec<TileGroup>> = Box::new(Vec::new());
+
+    let pixels_per_group = 200;
+    let num_groups = ((image_height * image_width) / pixels_per_group) + image_width / pixels_per_group;
+    {
+        let group_width = (pixels_per_group as f64).sqrt() as i32;
+        let group_height = (pixels_per_group / group_width);
+
         for i in 0..num_groups {
-            scanlines.push(ScanlineGroup::new(Arc::clone(&arc_hit), bg_col));
+            tiles.push(TileGroup::new(Arc::clone(&arc_hit), bg_col));
         }
 
-        for i in (0..image_height).rev() {
-            let curr_group = (i / sl_per_group) as usize;
-            for j in 0..image_width {
-                scanlines[curr_group].pixels.push(Par_Pixel{ color: colorRGB::new(), i, j});
-            }    
+        let groups_per_width = image_width / group_width ;
+        let groups_per_height = image_height / group_height;
+        for t in 0..tiles.len() {
+            let t_i32 = t as i32;
+            
+            
+            let row = ((t_i32 * group_width) as f64 / image_width as f64)  as i32;
+            // +1 at groups_per_width to reset t to 0, els it would be 1+ everytime)
+            // Meaning we are advancing columns, not resetting column to 0
+            let j_start = (t_i32 - row * (groups_per_width + 1)) * group_width;
+            let j_end = j_start + group_width;
+
+            let i_start = row * (group_height);
+            let i_end   = i_start + group_width + 1;
+
+            for i in (i_start..i_end).rev() {
+                if i > image_height {
+                    let s = false;
+                    continue
+                };
+                for j in (j_start..j_end) {
+                    if j > (image_width-1) {
+                        let s = false;
+                        continue
+                    };
+                    let index = (j  + i * image_width) as usize;
+                    tiles[t].pixels.push(Arc::clone(&image[index]));
+                }
+            }
+            
         }
     }
     eprintln!("Finished creating individual ArcMutexColorRGB at {} ms", timer.ms());
@@ -121,10 +159,11 @@ pub fn render() {
     eprintln!();
 
     {
-        let par_iter = scanlines.into_par_iter().map(|mut group| {
+        let par_iter = tiles.into_par_iter().map(|mut group| {
 
             for i in 0..group.pixels.len() {
-                let mut pixel = &mut group.pixels[i];
+                let mut guard_pxl = group.pixels[i].lock().unwrap();
+                let mut pixel = Par_Pixel{color: colorRGB::new(), i: guard_pxl.i, j: guard_pxl.j}; //&mut group.pixels[i];
 
                 let mut ambient_indirect = colorRGB::new();
                 let mut attenuation_bounces = colorRGB::one();
@@ -155,14 +194,16 @@ pub fn render() {
                     }
                 
                     pixel.color = pixel.color + ambient_indirect;
-                } 
+                }
+
+                guard_pxl.set_col(pixel.color); 
             }
         
 
         group
     });
         
-        scanlines = Box::new(Vec::from_par_iter(par_iter));
+        tiles = Box::new(Vec::from_par_iter(par_iter));
     }
 
     if let Some(usage) = memory_stats() {
@@ -174,11 +215,9 @@ pub fn render() {
     eprintln!("Tasks finished running at {} ms", timer.ms());
     {
         //let mut vec = arc_cols.lock().unwrap();
-        let _len = scanlines.len();
-        for i in (0.._len).rev() {
-            for j in (0..scanlines[i].pixels.len()) {
-                scanlines[i].pixels[j].color.write_color(samples as f64);
-            }
+        let _len = tiles.len();
+        for i in 0..image.len() {
+            image[i].lock().unwrap().color.write_color(samples as f64);
         }
     }
 //

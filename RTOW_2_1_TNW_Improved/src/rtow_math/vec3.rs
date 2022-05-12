@@ -207,6 +207,12 @@ pub struct Par_Pixel {
 
 unsafe impl Send for Par_Pixel {}
 
+impl Par_Pixel {
+    pub fn set_col(&mut self, col: colorRGB) {
+        self.color = col;
+    }
+}
+
 use rayon::prelude::*;
 
 //impl<T: Send> FromParallelITerator<T> for Vec<Par_Pixel> {
