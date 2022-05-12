@@ -106,7 +106,7 @@ impl vec3 {
 
     pub fn near_zero(&self) -> bool {
         let min = 1e-8;
-        (self.v[0] < min) && (self.v[1] < min) && (self.v[2] < min) 
+        (self.v[0].abs() < min) && (self.v[1].abs() < min) && (self.v[2].abs() < min) 
     }
 
     pub fn length_squared(&self) -> f64 {

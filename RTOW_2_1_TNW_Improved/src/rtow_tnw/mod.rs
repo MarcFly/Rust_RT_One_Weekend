@@ -14,12 +14,12 @@ use crate::rtow_math::prelude::*;
 use crate::materials::prelude::*;
 use std::sync::*;
 
-static samples: i32 = 50;
-static depth: i32 = 20;
+static samples: i32 = 20;
+static depth: i32 = 5;
 
 pub fn cam_final_scene() -> (camera, i32, i32) {
     let aspect_ratio = 1.;
-    let image_width = 800;
+    let image_width = 300;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
     let iw_f64 = image_width as f64;
     let ih_f64 = image_height as f64;

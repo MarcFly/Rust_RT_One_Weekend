@@ -104,41 +104,43 @@ pub fn render() {
 
     let mut tiles: Box<Vec<TileGroup>> = Box::new(Vec::new());
 
-    let pixels_per_group = 200;
-    let num_groups = ((image_height * image_width) / pixels_per_group) + image_width / pixels_per_group;
+    // This tile thingy is foking brilliant
+    let mut pixels_per_group = 200;
+    let group_width = (pixels_per_group as f64).sqrt() as i32;
+    let group_height = group_width + pixels_per_group % group_width;
+    pixels_per_group = group_width * group_height;
+    let tot_pixels = image_height * image_width;
+    
+    let reg_w_tiles = (image_width / group_width);
+    let reg_h_tiles = (image_height / group_height);
+    let leftover_w_tiles = (image_width - reg_w_tiles * group_width) * reg_h_tiles;
+    let leftover_h_tiles = (image_height - reg_h_tiles * group_height) * reg_w_tiles;
+    
+    let num_groups = reg_h_tiles * reg_w_tiles + leftover_h_tiles + leftover_w_tiles;
     {
-        let group_width = (pixels_per_group as f64).sqrt() as i32;
-        let group_height = (pixels_per_group / group_width);
 
         for i in 0..num_groups {
             tiles.push(TileGroup::new(Arc::clone(&arc_hit), bg_col));
         }
 
-        let groups_per_width = image_width / group_width ;
-        let groups_per_height = image_height / group_height;
+        let groups_per_width = reg_w_tiles + if leftover_w_tiles > 0 { 1 } else { 0 };
+        let groups_per_height = reg_h_tiles + if leftover_h_tiles > 0 { 1 } else { 0 };
         for t in 0..tiles.len() {
             let t_i32 = t as i32;
             
             
-            let row = ((t_i32 * group_width) as f64 / image_width as f64)  as i32;
+            let row = t_i32 / groups_per_width; // Assuming this already floors, instead of rounding
             // +1 at groups_per_width to reset t to 0, els it would be 1+ everytime)
             // Meaning we are advancing columns, not resetting column to 0
-            let j_start = (t_i32 - row * (groups_per_width + 1)) * group_width;
-            let j_end = j_start + group_width;
-
+            let j_start = (t_i32 - row * (groups_per_width)) * group_width;
+            let j_end = if j_start + group_width > image_width {image_width} else {j_start + group_width}; 
+            
             let i_start = row * (group_height);
-            let i_end   = i_start + group_width + 1;
+            let i_end   = if (i_start + group_height) > image_height {image_height} else {i_start + group_height};
+            
 
             for i in (i_start..i_end).rev() {
-                if i > image_height {
-                    let s = false;
-                    continue
-                };
                 for j in (j_start..j_end) {
-                    if j > (image_width-1) {
-                        let s = false;
-                        continue
-                    };
                     let index = (j  + i * image_width) as usize;
                     tiles[t].pixels.push(Arc::clone(&image[index]));
                 }
