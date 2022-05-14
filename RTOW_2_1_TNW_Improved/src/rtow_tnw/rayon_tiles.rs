@@ -205,7 +205,7 @@ pub fn render() {
         group
     });
         
-        tiles = Box::new(Vec::from_par_iter(par_iter));
+        Vec::from_par_iter(par_iter);
     }
 
     if let Some(usage) = memory_stats() {
@@ -216,8 +216,6 @@ pub fn render() {
 
     eprintln!("Tasks finished running at {} ms", timer.ms());
     {
-        //let mut vec = arc_cols.lock().unwrap();
-        let _len = tiles.len();
         for i in 0..image.len() {
             image[i].lock().unwrap().color.write_color(samples as f64);
         }

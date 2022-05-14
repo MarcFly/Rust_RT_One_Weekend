@@ -24,7 +24,7 @@ impl aa_box {
         ret.sides.obj_list.push(Arc::new(yz_rect::from(p0.v[1], p1.v[1], p0.v[2], p1.v[2], p1.v[0], Arc::clone(&mat))));
         ret.sides.obj_list.push(Arc::new(yz_rect::from(p0.v[1], p1.v[1], p0.v[2], p1.v[2], p0.v[0], Arc::clone(&mat))));
 
-        ret.sides.construct_bvh(0.,1.);
+        //ret.sides.construct_bvh(0.,1.);
 
         ret
     }
@@ -32,7 +32,7 @@ impl aa_box {
 
 impl Hittable for aa_box {
     fn hit(&self, r: &ray, t_min: f64, t_max: f64, rec:&mut hit_record) -> bool {
-        self.sides.hit_bvh(t_min, t_max, rec, r)
+        self.sides.hit(t_min, t_max, rec, r)
     }
 
     fn get_aabb(&self, time0: f64, time1: f64) -> (bool, aabb) {

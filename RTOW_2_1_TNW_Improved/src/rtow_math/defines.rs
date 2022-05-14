@@ -33,3 +33,8 @@ lazy_static! {
     pub static ref side_min: f64 = { -1. / (3.0 as f64).sqrt() / 2.0};
     pub static ref side_sum: f64 = {(1. - ( 1. / (3.0 as f64).sqrt())) / 2.};
 }
+
+use std::sync::*;
+pub type SharedStrict<T> = Arc<Mutex<T>>;
+pub type Shared<T> = Arc<RwLock<T>>;
+pub type SharedLax<T> = Arc<T>;
