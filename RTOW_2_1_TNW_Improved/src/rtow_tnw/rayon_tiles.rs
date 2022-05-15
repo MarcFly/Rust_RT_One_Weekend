@@ -9,6 +9,8 @@ use crate::rtow_math::prelude::*;
 use crate::materials::prelude::*;
 use std::sync::*;
 
+use tracing::{debug, event, info, info_span, span, Level};
+
 unsafe impl Send for TileGroup {}
 unsafe impl Sync for TileGroup {}
 
@@ -42,22 +44,31 @@ impl TileGroup {
 // (En+2  + An+2) * An+1 + En+1 = An+2
 
 fn ray_hits(r: &ray, obj: &Arc<hittable_list>, depth_: i32, bg_col: colorRGB, last_col: colorRGB) ->  (ray, colorRGB, colorRGB, bool) {
+
     if(depth_ < 1) {return (ray::new(), colorRGB::new(), colorRGB::one(), true)}
 
-    let next_depth = depth_ -1;
-    
+
     let mut rec = hit_record::new();
     let mut attenuation = colorRGB::new();
 
-    if !obj.hit_bvh(0.0001, std::f64::INFINITY, &mut rec, r) {
-        return (ray::new(), colorRGB::new(), bg_col, true);
+    {
+        let span_raycast = span!(Level::TRACE, "RayCast");
+        let span_raycast = span_raycast.enter();
+
+        if !obj.hit_bvh(0.0001, std::f64::INFINITY, &mut rec, r) {
+            return (ray::new(), colorRGB::new(), bg_col, true);
+        }
     }
 
     let mut scattered = ray::new();
     let emitted = rec.mat.emitted(rec.uv.v[0], rec.uv.v[1], &rec.p);
 
-    if !rec.mat.scatter_tex(r, &rec, &mut attenuation, &mut scattered) {
-        return (scattered, emitted, colorRGB::new(), true);
+    {
+        let span_scatter = span!(Level::TRACE, "Scatter");
+        let span_scatter = span_scatter.enter();
+        if !rec.mat.scatter_tex(r, &rec, &mut attenuation, &mut scattered) {
+            return (scattered, emitted, colorRGB::new(), true);
+        }
     }
     
     (
@@ -162,10 +173,17 @@ pub fn render() {
 
     {
         let par_iter = tiles.into_par_iter().map(|mut group| {
+            let span_tile = span!(Level::TRACE, "Tile");
+            let entry_tile = span_tile.enter();
 
             for i in 0..group.pixels.len() {
-                let mut guard_pxl = group.pixels[i].lock().unwrap();
-                let mut pixel = Par_Pixel{color: colorRGB::new(), i: guard_pxl.i, j: guard_pxl.j}; //&mut group.pixels[i];
+                let span_pixel = span!(Level::TRACE, "Pixel");
+                let entry_pixel = span_pixel.enter();
+                let mut pixel: Par_Pixel;
+                {
+                    let mut guard_pxl = group.pixels[i].lock().unwrap();
+                    pixel = Par_Pixel{color: colorRGB::new(), i: guard_pxl.i, j: guard_pxl.j}; //&mut group.pixels[i];
+                }
 
                 let mut ambient_indirect = colorRGB::new();
                 let mut attenuation_bounces = colorRGB::one();
@@ -176,6 +194,10 @@ pub fn render() {
                 
                 //let mut out_pixel = Par_Pixel{color: colorRGB::new(), i: pixel.i, j: pixel.j};
                 for s in (0..samples) {
+
+                    let span_sample = span!(Level::TRACE, "Sample");
+                    let entry_sample = span_sample.enter();
+
                     let u = (pixel.j as f64 + rand_f64()) / (iw_f64 - 1.);
                     let v = (pixel.i as f64 + rand_f64()) / (ih_f64 - 1.);
                     let mut r = cam.focus_time_ray(u, v);
@@ -185,20 +207,24 @@ pub fn render() {
 
                     for it_depth in (0..depth).rev()
                     {
-                        (r, step_emit, step_col, early_out) = ray_hits(&r, &group.objs, depth, bg_col, ambient_indirect);
+                        let span_bounce = span!(Level::TRACE, "Bounce");
+                        let span_bounce = span_bounce.enter();
+
+                        (r, step_emit, step_col, early_out) = ray_hits(&r, &group.objs, it_depth, bg_col, ambient_indirect);
                         if !step_col.near_zero() {
                             attenuation_bounces = attenuation_bounces * step_col;
                         }
                         ambient_indirect = ambient_indirect + (step_emit * attenuation_bounces);
-                    
+                        
                         if(early_out) {break};
-
                     }
                 
                     pixel.color = pixel.color + ambient_indirect;
                 }
 
-                guard_pxl.set_col(pixel.color); 
+                
+
+                group.pixels[i].lock().unwrap().set_col(pixel.color); 
             }
         
 

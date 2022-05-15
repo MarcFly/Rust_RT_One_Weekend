@@ -4,6 +4,8 @@ use crate::rtow_math::{
     defines::*,
 };
 
+use crate::objects::prelude::*;
+
 #[derive(Copy, Clone)]
 pub struct camera {
     origin: point3,
@@ -159,7 +161,7 @@ impl camera {
     }
 
     pub fn focus_ray(&self, u: f64, v:f64) -> ray {
-        let rd = random_in_disk() * self.lens_rad;
+        let rd = random_in_cylindermap() * self.lens_rad;
         let offset = self.u * *rd.x() + self.v * *rd.y();
         let og = self.origin + offset;
         let dir = self.lower_left + self.pitch*u + self.yaw*v - self.origin - offset;
@@ -167,7 +169,7 @@ impl camera {
     }
 
     pub fn focus_time_ray(&self, u: f64, v:f64) -> ray {
-        let rd = random_in_disk() * self.lens_rad;
+        let rd = random_in_cylindermap() * self.lens_rad;
         let offset = self.u * *rd.x() + self.v * *rd.y();
         let og = self.origin + offset;
         let dir = self.lower_left + self.pitch*u + self.yaw*v - self.origin - offset;

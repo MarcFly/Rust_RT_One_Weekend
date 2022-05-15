@@ -2,6 +2,7 @@ use crate::rtow_math::vec3::*;
 use crate::rtow_math::vec2::*;
 use crate::rtow_math::ray::*;
 use crate::objects::hit::*;
+use tracing::{debug, event, info, info_span, span, Level};
 
 pub fn hit_aabb(min: point3, max: point3, ray: &ray) -> f64 {
     let v_x = vec2::from(*min.x(), *max.x()).crossB();
@@ -138,6 +139,9 @@ unsafe impl Send for aabb {}
 unsafe impl Sync for aabb {}
 impl Hittable for aabb {
     fn hit(&self, r: &ray, t_min: f64, t_max: f64, rec:& mut hit_record) -> bool {
+        let span_aabb_hit = span!(Level::TRACE, "AABB_HIT");
+        let span_aabb_hit = span_aabb_hit.enter();
+
         rec.iters += 1;
         self.hit_fast(r, t_min, t_max)
     }

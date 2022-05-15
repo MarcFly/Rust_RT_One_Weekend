@@ -15,7 +15,7 @@ use crate::materials::prelude::*;
 use std::sync::*;
 
 static samples: i32 = 20;
-static depth: i32 = 50;
+static depth: i32 = 10;
 
 pub fn cam_final_scene() -> (camera, i32, i32) {
     let aspect_ratio = 1.;
