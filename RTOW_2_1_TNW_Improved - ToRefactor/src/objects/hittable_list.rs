@@ -4,11 +4,11 @@ use std::sync::Mutex;
 use crate::rtow_math::ray::*;
 use crate::objects::aabb::*;
 use crate::rtow_math::rng::*;
-
+use crate::objects::prelude::*;
 pub struct hittable_list {
-    pub obj_list: Box<Vec<Arc<dyn Hittable>>>,
-    bvh_start: Arc<dyn Hittable>,
-    bvh_node_list: Box<Vec<Arc<dyn Hittable>>>,
+    pub obj_list: Box<Vec<Arc<Objects>>>,
+    bvh_start: Arc<Objects>,
+    bvh_node_list: Box<Vec<Arc<Objects>>>,
     pub num_nodes: i32,
 }
 
@@ -16,7 +16,7 @@ impl hittable_list {
     pub fn new() -> hittable_list {
         hittable_list {
             obj_list: Box::new(Vec::new()),
-            bvh_start: Arc::new(bvh_node::new_empty()),
+            bvh_start: Arc::new(Objects::BVH_Node(bvh_node::new_empty())),
             bvh_node_list: Box::new(Vec::new()),
             num_nodes: 0,
         }
@@ -29,7 +29,7 @@ impl hittable_list {
     
         for obj in self.obj_list.as_ref() {
             rec.iters += 1;
-            if(obj.hit(r, t_min, t_max, &mut temp_rec) && temp_rec.t < closest) {
+            if(object_match_hit(&obj, r, t_min, t_max, &mut temp_rec) && temp_rec.t < closest) {
                 hit_anything = true;
                 closest = temp_rec.t;
                 *rec = temp_rec.clone();
@@ -43,12 +43,14 @@ impl hittable_list {
         let mut hit_anything = false;
         let mut closest = t_max;
     
-        if(self.bvh_start.hit(r, t_min, t_max, &mut temp_rec) && temp_rec.t < closest) {
-            hit_anything = true;
-            closest = temp_rec.t;
-            *rec = temp_rec.clone();
+        if let Objects::BVH_Node(node) = &*self.bvh_start {
+                if (node.hit(r, t_min, t_max, &mut temp_rec) && temp_rec.t < closest) {
+                hit_anything = true;
+                closest = temp_rec.t;
+                *rec = temp_rec.clone();
+            }
         }
-        
+            
         hit_anything
     }
 
@@ -59,7 +61,7 @@ impl hittable_list {
         let mut first_b = true;
         let mut check: bool;
         for obj in self.obj_list.as_ref() {
-            (check, temp_aabb) = obj.get_aabb(time0, time1);
+            (check, temp_aabb) = object_match_aabb(&obj, time0, time1);
             if !check { continue };
             ret_aabb = if first_b {temp_aabb} else {aabb::from_2_aabb(ret_aabb, temp_aabb)};
             first_b = false;
@@ -68,8 +70,8 @@ impl hittable_list {
     }
 
     pub fn construct_bvh(&mut self, time0: f64, time1: f64) {
-        let arc_node = Arc::new(bvh_node::new(&mut self.obj_list[..], time0, time1, &mut self.num_nodes, &mut self.bvh_node_list, 0));
-        self.bvh_node_list.push(arc_node);
+        let arc_node = bvh_node::new(&mut self.obj_list[..], time0, time1, &mut self.num_nodes, &mut self.bvh_node_list, 0);
+        self.bvh_node_list.push(Arc::new(Objects::BVH_Node(arc_node)));
         let len = self.bvh_node_list.len();
         self.bvh_start = Arc::clone(&self.bvh_node_list[len-1]);
     }
@@ -85,9 +87,9 @@ impl Hittable for hittable_list {
 }
 
 use crate::materials::*;
-struct bvh_node {
-    left_ch: Arc<dyn Hittable>,
-    right_ch: Arc<dyn Hittable>,
+pub struct bvh_node {
+    left_ch: Arc<Objects>,
+    right_ch: Arc<Objects>,
     pub aabb_box: aabb,
     pub mat: Arc<dyn Material>,
     pub internal_depth: i32,
@@ -100,8 +102,8 @@ use crate::materials::textures::*;
 impl bvh_node {
     pub fn new_empty() -> bvh_node {
         bvh_node { 
-            left_ch: Arc::new(aabb::new()), 
-            right_ch: Arc::new(aabb::new()), 
+            left_ch: Arc::new(Objects::AABB(aabb::new())), 
+            right_ch: Arc::new(Objects::AABB(aabb::new())), 
             aabb_box: aabb::new(),
             mat: Arc::new(dielectric{
                 albedo: colorRGB::from(1.,0.,0.), 
@@ -112,7 +114,7 @@ impl bvh_node {
             internal_depth: 0,
         }
     }
-    pub fn new(obj_list: &mut [Arc<dyn Hittable>], time0: f64, time1: f64, num_nodes: &mut i32, node_list: &mut Box<Vec<Arc<dyn Hittable>>>, depth: i32 ) -> bvh_node {
+    pub fn new(obj_list: &mut [Arc<Objects>], time0: f64, time1: f64, num_nodes: &mut i32, node_list: &mut Box<Vec<Arc<Objects>>>, depth: i32 ) -> bvh_node {
         //let axis = rand_i8_r(0,2) as usize;
         let axis = 1;
         let mut ret_node = bvh_node::new_empty();
@@ -131,7 +133,7 @@ impl bvh_node {
             ret_node.left_ch = Arc::clone(&obj_list[0]);
             ret_node.right_ch = Arc::clone(&obj_list[0]);
         } else if list_len == 2 {
-            if obj_list[0].compare(Arc::clone(&obj_list[1]), axis) {
+            if object_match_compare(&obj_list[0], &Arc::clone(&obj_list[1]), axis) {
                 ret_node.left_ch = Arc::clone(&obj_list[0]);
                 ret_node.right_ch = Arc::clone(&obj_list[1]);
             } else {
@@ -141,17 +143,17 @@ impl bvh_node {
         } else {
             obj_list.sort_by(|a, b| compare_fun(a,b));
             let mid = list_len / 2;
-            let arc_node_l = Arc::new(bvh_node::new(&mut obj_list[0..mid], time0, time1, num_nodes, node_list, depth + 1 ));
-            node_list.push(arc_node_l);
+            let arc_node_l = bvh_node::new(&mut obj_list[0..mid], time0, time1, num_nodes, node_list, depth + 1 );
+            node_list.push(Arc::new(Objects::BVH_Node(arc_node_l)));
             ret_node.left_ch = Arc::clone(&node_list[node_list.len()-1]);
             
-            let arc_node_r = Arc::new(bvh_node::new(&mut obj_list[mid..], time0, time1, num_nodes, node_list, depth + 1));
-            node_list.push(arc_node_r);
+            let arc_node_r = bvh_node::new(&mut obj_list[mid..], time0, time1, num_nodes, node_list, depth + 1);
+            node_list.push(Arc::new(Objects::BVH_Node(arc_node_r)));
             ret_node.right_ch = Arc::clone(&node_list[node_list.len()-1]);
         }
 
-        let (check1, box_l) = ret_node.left_ch.get_aabb(time0, time1);
-        let (check2, box_r) = ret_node.right_ch.get_aabb(time0, time1);
+        let (check1, box_l) = object_match_aabb_arc(&ret_node.left_ch, time0, time1);
+        let (check2, box_r) = object_match_aabb_arc(&ret_node.right_ch, time0, time1);
         if !check1 || !check2 { panic!("BVH_Node had an invalid aabb, light?")};
         ret_node.aabb_box = aabb::from_2_aabb(box_l, box_r);
         *num_nodes += 1;
@@ -160,24 +162,24 @@ impl bvh_node {
     }
 }
 
-use tracing::{debug, event, info, info_span, span, Level};
+//use tracing::{debug, event, info, info_span, span, Level};
 
 unsafe impl Send for bvh_node {}
 unsafe impl Sync for bvh_node {}
 impl Hittable for bvh_node {
     fn hit(&self, r: &ray, t_min: f64, t_max: f64, rec:&mut hit_record) -> bool {
-        let span_bvh_node_hit = span!(Level::TRACE, "BVH_NODE_HIT", self.internal_depth);
-        let span_bvh_node_hit = span_bvh_node_hit.enter();
+        //let span_bvh_node_hit = span!(Level::TRACE, "BVH_NODE_HIT");
+        //let span_bvh_node_hit = span_bvh_node_hit.enter();
 
         if !self.aabb_box.hit(r, t_min, t_max, rec) { return false };
 
-        event!(Level::TRACE, "BVH_NODE_LEFT");
-        let hit_left = self.left_ch.hit(r, t_min, t_max, rec);
+        //event!(Level::TRACE, "BVH_NODE_LEFT");
+        let hit_left = object_match_hit_arc(&self.left_ch, r, t_min, t_max, rec);
+        if hit_left {return true};
         
-        event!(Level::TRACE, "BVH_NODE_RIGHT");
+        //event!(Level::TRACE, "BVH_NODE_RIGHT");
 
-        hit_left || self.right_ch.hit(r, t_min, if hit_left {rec.t} else {t_max}, rec)
-        
+        object_match_hit_arc(&self.right_ch, r, t_min, if hit_left {rec.t} else {t_max}, rec)        
         
     }
 

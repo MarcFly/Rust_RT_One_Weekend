@@ -11,10 +11,10 @@ pub mod rtow_tnw;
 
 use simple_stopwatch::Stopwatch;
 
-use tracing::subscriber;
-use tracing_tracy::TracyLayer;
-use tracing::{debug, event, info, info_span, span, Level};
-use tracing_subscriber::layer::SubscriberExt;
+//use tracing::subscriber;
+//use tracing_tracy::TracyLayer;
+//use tracing::{debug, event, info, info_span, span, Level};
+//use tracing_subscriber::layer::SubscriberExt;
 
 
 fn main() {
@@ -44,8 +44,8 @@ fn rtow_tnw_fns() {
     //use_emissive::render();
     //cornell_box::render();
     //use_volumes::render();
-    let app_span = span!(Level::TRACE, "Span1");
-    let app_entry = app_span.enter();
+    //let app_span = span!(Level::TRACE, "Span1");
+    //let app_entry = app_span.enter();
 
     if let(Some(usage)) = memory_stats() {
         eprintln!("Before All Physical Mem: {}", usage.physical_mem / 1024 / 1024);
@@ -53,12 +53,12 @@ fn rtow_tnw_fns() {
         
         //rayon_test::render();
         //rayon_chunks::render();
-        event!(Level::TRACE, "Entering Render");
-        //rayon_tiles::render();
+        //event!(Level::TRACE, "Entering Render");
+        rayon_tiles::render();
         eprintln!("After Iterative Physical Mem: {}", usage.physical_mem / 1024 / 1024);
         eprintln!("After Iterative Virtual Mem: {}", usage.virtual_mem / 1024 / 1024);
         
-        final_scene_render::render();
+        //final_scene_render::render();
         
         eprintln!("After Recursive Physical Mem: {}", usage.physical_mem / 1024 / 1024);
         eprintln!("After Recursive Virtual Mem: {}", usage.virtual_mem / 1024 / 1024);

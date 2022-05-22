@@ -58,15 +58,19 @@ pub fn obj_final_scene() -> (hittable_list, Vec<Arc<dyn Material>>) {
             let z1 = z0 + w;
             let y1 = rand_f64_r(1., 101.);
             
-            ground_boxes.obj_list.push(Arc::new(aa_box::from(point3::from(x0, y0, z0), point3::from(x1, y1, z1), Arc::clone(&material_vec[0]))));
+            ground_boxes.obj_list.push(Arc::new( Objects::Cube(
+                aa_box::from(point3::from(x0, y0, z0), point3::from(x1, y1, z1), Arc::clone(&material_vec[0]))
+            )));
         }
     }
     ground_boxes.construct_bvh(0.,1.);
-    hittables.obj_list.push(Arc::new(ground_boxes));
+    hittables.obj_list.push(Arc::new(Objects::HitList(ground_boxes)));
 
     // Emitters
     material_vec.push(Arc::new(Diffuse_Emissive{albedo: colorRGB::one() * 7., tex: Arc::new(Solid_Color::from_colorRGB(colorRGB::one()))}));
-    hittables.obj_list.push(Arc::new(xz_rect::from(123., 423., 147., 412., 553., Arc::clone(&material_vec[1]))));
+    hittables.obj_list.push(Arc::new(Objects::XZ_Rect(
+        xz_rect::from(123., 423., 147., 412., 553., Arc::clone(&material_vec[1]))
+    )));
 
     // Base Spheres
     let c1 = point3::from(400., 400., 200.);
@@ -74,42 +78,56 @@ pub fn obj_final_scene() -> (hittable_list, Vec<Arc<dyn Material>>) {
 
     material_vec.push(Arc::new(lambertian{albedo: colorRGB::one(), tex: Arc::new( Solid_Color::from( 0.7, 0.3, 0.1))}));
     let mov_sphere1 = moving_sphere::from_all(c1, c2, 0., 1., 50., Arc::clone(&material_vec[2]));
-    hittables.obj_list.push(Arc::new(mov_sphere1));
+    hittables.obj_list.push(Arc::new(Objects::MovingSphere(mov_sphere1)));
 
     material_vec.push(Arc::new( dielectric::from(0., 1.5, Arc::new(Solid_Color::from_colorRGB(colorRGB::one())))));
-    hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(260., 150., 45.), 50., Arc::clone(&material_vec[3]))));
+    hittables.obj_list.push(Arc::new(Objects::Sphere(
+        sphere::from_mat(point3::from(260., 150., 45.), 50., Arc::clone(&material_vec[3]))
+    )));
     
     material_vec.push(Arc::new(metal::new(1., Arc::new(Solid_Color::from(0.8, 0.8, 0.8)))));
-    hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(0., 150., 145.), 50., Arc::clone(&material_vec[4]))));
+    hittables.obj_list.push(Arc::new(Objects::Sphere(
+        sphere::from_mat(point3::from(0., 150., 145.), 50., Arc::clone(&material_vec[4]))
+    )));
 
     // Sphere with Fog inside
     material_vec.push(Arc::new(dielectric::from(0., 1.5, Arc::new(Solid_Color::from_colorRGB(colorRGB::one())))));
     let boundary = sphere::from_mat(point3::from(360., 150., 145.), 70., Arc::clone(&material_vec[5]));
     let boundary2 = boundary.clone();
-    hittables.obj_list.push(Arc::new(boundary));
+    hittables.obj_list.push(Arc::new(Objects::Sphere(boundary)));
 
-    hittables.obj_list.push(Arc::new(constant_medium::new(Box::new(boundary2), 0.2, Arc::new(Solid_Color::from(0.2, 0.4, 0.9)))));
+    hittables.obj_list.push(Arc::new(Objects::ConstantMedium(
+        constant_medium::new(Box::new(boundary2), 0.2, Arc::new(Solid_Color::from(0.2, 0.4, 0.9)))
+    )));
 
     // General Fog
     material_vec.push(Arc::new(dielectric::from(0., 1.5, Arc::new(Solid_Color::from_colorRGB(colorRGB::one())))));
     let boundary3 = sphere::from_mat(point3::new(), 5000., Arc::clone(&material_vec[6]));
-    hittables.obj_list.push(Arc::new(constant_medium::new(Box::new(boundary3), 0.0001, Arc::new(Solid_Color::from_colorRGB(colorRGB::one())))));
+    hittables.obj_list.push(Arc::new(Objects::ConstantMedium(
+        constant_medium::new(Box::new(boundary3), 0.0001, Arc::new(Solid_Color::from_colorRGB(colorRGB::one())))
+    )));
 
     // Earth Sphere
     let path = String::from("earthmap.jpg");
     material_vec.push(Arc::new(lambertian::new(colorRGB::one(), Arc::new(RTOW_Image::load(&path)))));
-    hittables.obj_list.push(Arc::new(sphere::from_mat(point3::from(400., 200., 400.), 100., Arc::clone(&material_vec[7]))));
+    hittables.obj_list.push(Arc::new(Objects::Sphere(
+        sphere::from_mat(point3::from(400., 200., 400.), 100., Arc::clone(&material_vec[7]))
+    )));
 
     // Noise Sphere
     material_vec.push(Arc::new( lambertian::new(colorRGB::new(), Arc::new(Perlin_Noise::new_scaled(0.1)))));
-    hittables.obj_list.push(Arc::new( sphere::from_mat(point3::from(220., 280., 300.), 80., Arc::clone(&material_vec[8]))));
+    hittables.obj_list.push(Arc::new( Objects::Sphere(
+        sphere::from_mat(point3::from(220., 280., 300.), 80., Arc::clone(&material_vec[8]))
+    )));
 
     // Spheres in a Box
     material_vec.push(Arc::new(lambertian::new(colorRGB::one(), Arc::new(Solid_Color::from(0.73, 0.73, 0.73)))));
     let ns = 1000;
     let mut sphere_in_box = hittable_list::new();
     for i in 0..1000 {
-        sphere_in_box.obj_list.push(Arc::new(sphere::from_mat(random_in_unit_cube() * 165., 10., Arc::clone(&material_vec[9]))));
+        sphere_in_box.obj_list.push(Arc::new(Objects::Sphere(
+            sphere::from_mat(random_in_unit_cube() * 165., 10., Arc::clone(&material_vec[9]))
+        )));
     }
     sphere_in_box.construct_bvh(0.,1.);
 
@@ -120,7 +138,7 @@ pub fn obj_final_scene() -> (hittable_list, Vec<Arc<dyn Material>>) {
             vec3::from(0., 15., 0.))),
     vec3::from(-100., 270., 395.));
 
-    hittables.obj_list.push(Arc::new(translated_spheres));
+    hittables.obj_list.push(Arc::new( Objects::Moved(translated_spheres)));
         
     hittables.construct_bvh(0., 1.);
 
