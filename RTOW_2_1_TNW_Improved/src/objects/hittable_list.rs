@@ -176,7 +176,9 @@ impl Hittable for bvh_node {
         
         event!(Level::TRACE, "BVH_NODE_RIGHT");
 
-        hit_left || self.right_ch.hit(r, t_min, if hit_left {rec.t} else {t_max}, rec)
+        let hit_right = self.right_ch.hit(r, t_min, if hit_left {rec.t} else {t_max}, rec);
+
+        hit_left || hit_right
         
         
     }

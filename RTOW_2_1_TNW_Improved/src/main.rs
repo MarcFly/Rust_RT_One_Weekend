@@ -54,11 +54,11 @@ fn rtow_tnw_fns() {
         //rayon_test::render();
         //rayon_chunks::render();
         event!(Level::TRACE, "Entering Render");
-        //rayon_tiles::render();
+        rayon_tiles::render();
         eprintln!("After Iterative Physical Mem: {}", usage.physical_mem / 1024 / 1024);
         eprintln!("After Iterative Virtual Mem: {}", usage.virtual_mem / 1024 / 1024);
         
-        final_scene_render::render();
+        //final_scene_render::render();
         
         eprintln!("After Recursive Physical Mem: {}", usage.physical_mem / 1024 / 1024);
         eprintln!("After Recursive Virtual Mem: {}", usage.virtual_mem / 1024 / 1024);
