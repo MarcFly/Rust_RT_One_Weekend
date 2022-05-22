@@ -195,14 +195,16 @@ impl Hittable for bvh_node {
             Node::Tree(item) => item.hit(r, t_min, t_max, rec),
             Node::Branch(item) => item.hit(r,t_min, t_max, rec),
         };
-        if hit_left {return true};
+        //if hit_left {return true};
         
         event!(Level::TRACE, "BVH_NODE_RIGHT");
+        
+        let hit_right = match &self.right_ch {
+            Node::Tree(item) => item.hit(r, t_min, if hit_left {rec.t} else {t_max}, rec),
+            Node::Branch(item) => item.hit(r,t_min, if hit_left {rec.t} else {t_max}, rec),
+        };
 
-        match &self.right_ch {
-            Node::Tree(item) => item.hit(r, t_min, t_max, rec),
-            Node::Branch(item) => item.hit(r,t_min, t_max, rec),
-        }
+        hit_left || hit_right
     }
 
     fn get_aabb(&self, time0: f64, time1: f64) -> (bool, aabb) {
